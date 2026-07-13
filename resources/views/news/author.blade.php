@@ -1,0 +1,20 @@
+@extends('layouts.app')
+
+@section('title', $author->name . ' — ' . config('app.name'))
+
+@section('content')
+    <header class="mb-6 border-b-2 border-red-600 pb-3">
+        <p class="text-sm uppercase tracking-wide text-gray-500">Author</p>
+        <h1 class="text-2xl font-black">{{ $author->name }}</h1>
+    </header>
+
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        @forelse ($articles as $article)
+            @include('partials.article-card', ['article' => $article])
+        @empty
+            <p class="text-gray-500">Is author ki abhi koi article nahi.</p>
+        @endforelse
+    </div>
+
+    <div class="mt-8">{{ $articles->links() }}</div>
+@endsection
