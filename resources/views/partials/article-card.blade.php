@@ -16,7 +16,7 @@
             <p class="mt-2 text-sm text-gray-600 line-clamp-2">{{ $article->excerpt }}</p>
         @endif
         <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
-            <span>{{ $article->author?->name }}</span>
+            <span>{{ $article->byline }}</span>
             <span>&middot;</span>
             <span>{{ $article->published_at?->format('d M Y') }}</span>
         </div>

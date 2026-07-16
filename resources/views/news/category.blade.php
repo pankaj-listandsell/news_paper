@@ -14,7 +14,7 @@
         @forelse ($articles as $article)
             @include('partials.article-card', ['article' => $article])
         @empty
-            <p class="text-gray-500">Is category me abhi koi article nahi.</p>
+            <p class="text-gray-500">No articles in this category yet.</p>
         @endforelse
     </div>
 

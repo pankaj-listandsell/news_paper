@@ -68,7 +68,7 @@
         <div class="mx-auto max-w-7xl px-4 py-10 grid gap-8 md:grid-cols-3">
             <div>
                 <h3 class="text-xl font-black text-white">{{ config('app.name') }}</h3>
-                <p class="mt-2 text-sm text-gray-400">Aapke liye din bhar ki taaza khabrein, analysis aur updates.</p>
+                <p class="mt-2 text-sm text-gray-400">Latest news, analysis and updates — all day long.</p>
             </div>
             <div>
                 <h4 class="font-semibold text-white">Categories</h4>
@@ -80,7 +80,7 @@
             </div>
             <div>
                 <h4 class="font-semibold text-white">Newsletter</h4>
-                <p class="mt-2 text-sm text-gray-400">Subscribe kijiye latest news email par paane ke liye.</p>
+                <p class="mt-2 text-sm text-gray-400">Subscribe to get the latest news in your inbox.</p>
                 @if (session('subscribe_status'))
                     <p class="mt-2 text-sm text-green-400">{{ session('subscribe_status') }}</p>
                 @endif

@@ -16,7 +16,11 @@
             @endif
 
             <div class="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                <a href="{{ route('author.show', $article->author) }}" class="font-semibold text-gray-700 hover:text-red-600">{{ $article->author?->name }}</a>
+                @if ($article->source_name)
+                    <span class="font-semibold text-gray-700">{{ $article->source_name }}</span>
+                @elseif ($article->author)
+                    <a href="{{ route('author.show', $article->author) }}" class="font-semibold text-gray-700 hover:text-red-600">{{ $article->author->name }}</a>
+                @endif
                 <span>&middot;</span>
                 <span>{{ $article->published_at?->translatedFormat('d F Y, H:i') }}</span>
                 <span>&middot;</span>
@@ -31,6 +35,16 @@
             <div class="prose prose-lg mt-6 max-w-none prose-a:text-red-600 prose-img:rounded-lg">
                 {!! $article->body !!}
             </div>
+
+            @if ($article->source_url)
+                <div class="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+                    <span class="text-gray-600">This story was originally published at:</span>
+                    <a href="{{ $article->source_url }}" target="_blank" rel="noopener nofollow"
+                       class="ml-1 font-semibold text-red-600 hover:underline">
+                        {{ $article->source_name ?: 'Original source' }} ↗
+                    </a>
+                </div>
+            @endif
 
             @if ($article->tags->isNotEmpty())
                 <div class="mt-8 flex flex-wrap gap-2">
@@ -59,7 +73,7 @@
                             <p class="mt-2 text-sm text-gray-700">{{ $comment->body }}</p>
                         </div>
                     @empty
-                        <p class="text-sm text-gray-500">Abhi tak koi comment nahi. Pehle aap likhein!</p>
+                        <p class="text-sm text-gray-500">No comments yet. Be the first to comment!</p>
                     @endforelse
                 </div>
 

@@ -17,6 +17,6 @@ class CommentController extends Controller
 
         $article->comments()->create($data + ['is_approved' => false]);
 
-        return back()->with('comment_status', 'Aapka comment review ke liye bhej diya gaya hai. Approve hone par dikhega.');
+        return back()->with('comment_status', 'Your comment has been submitted for review and will appear once approved.');
     }
 }

@@ -6,9 +6,9 @@
     <header class="mb-6 border-b-2 border-red-600 pb-3">
         <h1 class="text-2xl font-black">Search results</h1>
         @if ($q !== '')
-            <p class="mt-1 text-gray-600">"<span class="font-semibold">{{ $q }}</span>" ke liye {{ $articles->total() }} results</p>
+            <p class="mt-1 text-gray-600">{{ $articles->total() }} results for "<span class="font-semibold">{{ $q }}</span>"</p>
         @else
-            <p class="mt-1 text-gray-600">Search karne ke liye upar box me kuch likhein.</p>
+            <p class="mt-1 text-gray-600">Type something in the box above to search.</p>
         @endif
     </header>
 
@@ -16,7 +16,7 @@
         @forelse ($articles as $article)
             @include('partials.article-card', ['article' => $article])
         @empty
-            <p class="text-gray-500">Koi result nahi mila.</p>
+            <p class="text-gray-500">No results found.</p>
         @endforelse
     </div>
 

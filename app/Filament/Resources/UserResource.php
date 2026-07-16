@@ -40,7 +40,7 @@ class UserResource extends Resource
                     ->required(fn (string $operation) => $operation === 'create')
                     ->dehydrated(fn (?string $state) => filled($state))
                     ->dehydrateStateUsing(fn (string $state) => Hash::make($state))
-                    ->helperText('Edit karte waqt khaali chhodein to password nahi badlega.'),
+                    ->helperText('Leave blank when editing to keep the current password.'),
                 Forms\Components\Select::make('roles')
                     ->relationship('roles', 'name')
                     ->multiple()

@@ -45,7 +45,7 @@
                 @forelse ($latest as $article)
                     @include('partials.article-card', ['article' => $article])
                 @empty
-                    <p class="text-gray-500">Abhi koi article publish nahi hui.</p>
+                    <p class="text-gray-500">No articles published yet.</p>
                 @endforelse
             </div>
 

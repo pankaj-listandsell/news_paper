@@ -167,6 +167,95 @@ class ArticleResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_breaking'),
             ])
             ->actions([
+                Tables\Actions\Action::make('aiRewrite')
+                    ->label('AI rewrite')
+                    ->icon('heroicon-o-sparkles')
+                    ->color('info')
+                    ->form([
+                        Forms\Components\Select::make('provider')
+                            ->label('Provider')
+                            ->options(\App\Support\AiConfig::providerOptions())
+                            ->default(\App\Support\AiConfig::provider())
+                            ->required(),
+                    ])
+                    ->action(function (Article $record, array $data) {
+                        $rewriter = \App\Scraping\AiRewriterFactory::make($data['provider']);
+
+                        if (! $rewriter->isConfigured()) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('API key missing')
+                                ->body("Add this provider's API key in AI Settings.")
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $result = $rewriter->rewrite(
+                            $record->title,
+                            $record->body ?? '',
+                            \App\Support\AiConfig::language()
+                        );
+
+                        if ($result === null) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('AI rewrite failed')
+                                ->body('The provider returned no response. Check the logs.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->update([
+                            'title'   => $result['title'],
+                            'excerpt' => $result['excerpt'] ?: $record->excerpt,
+                            'body'    => ! empty($result['body']) ? $result['body'] : $record->body,
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Rewritten with AI')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('aiImage')
+                    ->label('AI image')
+                    ->icon('heroicon-o-photo')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalDescription('Generates a new AI image (OpenAI). This replaces the current image.')
+                    ->action(function (Article $record) {
+                        $generator = new \App\Scraping\AiImageGenerator();
+
+                        if (! $generator->isConfigured()) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('OpenAI key missing')
+                                ->body('Add your OpenAI key in AI Settings.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $path = $generator->generate($record->title);
+
+                        if ($path === null) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Image generation failed')
+                                ->body('Check the logs (content policy or API error).')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->update(['featured_image' => $path]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('AI image generated')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
