@@ -173,8 +173,10 @@ class ScrapeSourceJob implements ShouldQueue
             return $records;
         }
 
+        $context = $this->source->category?->name;
+
         foreach ($records as $i => $data) {
-            $path = $generator->generate($data['title']);
+            $path = $generator->generate($data['title'], $context);
 
             if ($path !== null) {
                 $records[$i]['featured_image'] = $path; // local disk path

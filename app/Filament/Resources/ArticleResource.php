@@ -237,7 +237,7 @@ class ArticleResource extends Resource
                             return;
                         }
 
-                        $path = $generator->generate($record->title);
+                        $path = $generator->generate($record->title, $record->category?->name);
 
                         if ($path === null) {
                             \Filament\Notifications\Notification::make()

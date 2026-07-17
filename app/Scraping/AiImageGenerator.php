@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 /**
  * Generates a fresh illustration for an article using OpenAI's image API
- * (DALL·E) and stores it on the public disk.
+ * (gpt-image-1) and stores it on the public disk.
  *
  * NOTE: the result is an AI illustration, NOT a real photo of the event.
  */
@@ -22,49 +22,69 @@ class AiImageGenerator
     }
 
     /**
+     * @param  string|null  $context  category / topic used for the safe fallback prompt
      * @return string|null  disk path (e.g. "articles/ai/xyz.png") or null on failure
      */
-    public function generate(string $title): ?string
+    public function generate(string $title, ?string $context = null): ?string
     {
-        $apiKey = AiConfig::apiKey('openai');
-
-        if (blank($apiKey)) {
+        if (blank(AiConfig::apiKey('openai'))) {
             return null;
         }
+
+        // First try a headline-based prompt; if the safety system blocks it,
+        // fall back to a neutral topic-based prompt so an image is still made.
+        $bytes = $this->request($this->headlinePrompt($title));
+
+        if ($bytes === null) {
+            $bytes = $this->request($this->safePrompt($context));
+        }
+
+        if (blank($bytes)) {
+            return null;
+        }
+
+        $path = 'articles/ai/' . Str::uuid() . '.png';
+        Storage::disk('public')->put($path, $bytes);
+
+        return $path;
+    }
+
+    /**
+     * Call the image API once. Returns raw image bytes or null.
+     * Retries transient network errors; does NOT retry a moderation block
+     * (the caller falls back to a safer prompt instead).
+     */
+    private function request(string $prompt): ?string
+    {
+        $apiKey = AiConfig::apiKey('openai');
 
         try {
             $response = Http::withToken($apiKey)
                 ->timeout(120)
+                ->retry(2, 1000, throw: false) // transient network/SSL errors
                 ->post(config('ai.providers.openai.image_url'), [
                     'model'   => config('ai.providers.openai.image_model', 'gpt-image-1'),
-                    'prompt'  => $this->prompt($title),
+                    'prompt'  => $prompt,
                     'n'       => 1,
                     'size'    => config('ai.providers.openai.image_size', '1024x1024'),
                     'quality' => config('ai.providers.openai.image_quality', 'low'),
                 ]);
 
             if (! $response->successful()) {
-                Log::warning('AI image failed: ' . $response->status() . ' ' . $response->body());
+                Log::warning('AI image failed: ' . $response->status() . ' ' . Str::limit($response->body(), 300));
 
                 return null;
             }
 
-            // Newer models return base64; dall-e-3 returns a temporary URL.
-            $bytes = null;
             if ($b64 = $response->json('data.0.b64_json')) {
-                $bytes = base64_decode($b64);
-            } elseif ($url = $response->json('data.0.url')) {
-                $bytes = Http::timeout(60)->get($url)->body();
+                return base64_decode($b64);
             }
 
-            if (blank($bytes)) {
-                return null;
+            if ($url = $response->json('data.0.url')) {
+                return Http::timeout(60)->retry(2, 1000, throw: false)->get($url)->body();
             }
 
-            $path = 'articles/ai/' . Str::uuid() . '.png';
-            Storage::disk('public')->put($path, $bytes);
-
-            return $path;
+            return null;
         } catch (\Throwable $e) {
             Log::warning('AI image error: ' . $e->getMessage());
 
@@ -72,9 +92,20 @@ class AiImageGenerator
         }
     }
 
-    private function prompt(string $title): string
+    private function headlinePrompt(string $title): string
     {
-        return "Editorial news illustration representing this headline: \"{$title}\". "
-            . 'Photorealistic, high quality, no text, no words, no watermark, no logos.';
+        return 'A clean, professional editorial news illustration for a newspaper, '
+            . 'representing this topic: "' . Str::limit($title, 200, '') . '". '
+            . 'Tasteful, safe-for-work, photorealistic, neutral tone. '
+            . 'No text, no words, no watermark, no logos, no graphic or sensitive content.';
+    }
+
+    private function safePrompt(?string $context): string
+    {
+        $topic = $context ? "the topic of {$context}" : 'a general news story';
+
+        return "A clean, professional, generic editorial news photo representing {$topic}. "
+            . 'Neutral, tasteful, safe-for-work, photorealistic. '
+            . 'No people in distress, no text, no words, no watermark, no logos.';
     }
 }
