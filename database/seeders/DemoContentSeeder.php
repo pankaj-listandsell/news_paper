@@ -13,18 +13,19 @@ class DemoContentSeeder extends Seeder
 {
     public function run(): void
     {
-        $author = User::where('email', 'admin@newspaper.test')->first();
+        $author = User::query()->oldest('id')->first();
 
+        // Front-end language is German, so demo content is German too.
         $categories = [
-            'Politics'      => 'Latest political news and analysis.',
-            'Sports'        => 'Cricket, football aur baaki khel ki khabrein.',
-            'Business'      => 'Markets, economy aur business updates.',
-            'Technology'    => 'Gadgets, apps aur tech industry.',
-            'Entertainment' => 'Movies, music aur celebrity news.',
-            'World'         => 'International news from around the globe.',
+            'Politik'      => 'Aktuelle Politik-Nachrichten und Analysen.',
+            'Sport'        => 'Fußball, Sport und alles aus der Welt des Sports.',
+            'Wirtschaft'   => 'Märkte, Wirtschaft und Unternehmensnachrichten.',
+            'Technik'      => 'Gadgets, Apps und die Tech-Branche.',
+            'Unterhaltung' => 'Filme, Musik und Promi-News.',
+            'Welt'         => 'Internationale Nachrichten aus aller Welt.',
         ];
 
-        $tags = collect(['India', 'Election', 'Cricket', 'Startup', 'AI', 'Bollywood', 'Economy', 'Health'])
+        $tags = collect(['Berlin', 'Wahl', 'Fußball', 'Startup', 'KI', 'Kultur', 'Wirtschaft', 'Gesundheit'])
             ->map(fn ($name) => Tag::firstOrCreate(['slug' => Str::slug($name)], ['name' => $name]));
 
         $sort = 1;
@@ -35,13 +36,13 @@ class DemoContentSeeder extends Seeder
             );
 
             for ($i = 1; $i <= 5; $i++) {
-                $title = "{$name} sample news story number {$i}";
+                $title = "{$name}: Beispielmeldung Nummer {$i}";
                 $article = Article::firstOrCreate(
                     ['slug' => Str::slug($title)],
                     [
                         'title'        => $title,
-                        'subtitle'     => "Ek chhota sa subtitle {$name} ke story ke liye.",
-                        'excerpt'      => "Yeh {$name} category ki ek demo news story hai jo layout dikhane ke liye banayi gayi hai.",
+                        'subtitle'     => "Eine kurze Unterzeile für die Rubrik {$name}.",
+                        'excerpt'      => "Eine Beispielmeldung aus der Rubrik {$name}, die nur das Layout der Seite zeigt.",
                         'body'         => $this->body($name),
                         'category_id'  => $category->id,
                         'user_id'      => $author->id,
@@ -60,12 +61,12 @@ class DemoContentSeeder extends Seeder
 
     private function body(string $name): string
     {
-        $p = "<p>Yeh {$name} category ki ek demo article hai. Is paragraph me sirf placeholder text hai taaki aap article page ka layout, typography aur spacing dekh sakein.</p>";
+        $p = "<p>Dies ist ein Beispielartikel aus der Rubrik {$name}. Der Text dient nur dazu, Layout, Typografie und Abstände der Artikelseite zu zeigen.</p>";
 
         return $p
-            . "<h2>Background</h2><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>"
-            . "<p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>"
-            . "<blockquote>Yeh ek example quote hai jo article ke andar dikhaya gaya hai.</blockquote>"
-            . "<h2>Aage kya?</h2><p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>";
+            . '<h2>Hintergrund</h2><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>'
+            . '<p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>'
+            . '<blockquote>Ein Beispielzitat, wie es innerhalb eines Artikels dargestellt wird.</blockquote>'
+            . '<h2>Wie geht es weiter?</h2><p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>';
     }
 }

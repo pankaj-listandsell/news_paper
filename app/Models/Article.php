@@ -121,7 +121,7 @@ class Article extends Model
     {
         // Aggregated articles are credited to their original publisher;
         // locally-written ones to their author.
-        return $this->source_name ?: ($this->author?->name ?? 'Newsroom');
+        return $this->source_name ?: ($this->author?->name ?? 'Redaktion');
     }
 
     public function getReadingTimeAttribute(): int

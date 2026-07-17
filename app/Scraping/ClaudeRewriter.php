@@ -16,7 +16,7 @@ class ClaudeRewriter implements AiRewriter
         return filled(AiConfig::apiKey('claude'));
     }
 
-    public function rewrite(string $title, string $body, string $language): ?array
+    public function rewrite(string $title, string $body, string $language, array $categories = []): ?array
     {
         $apiKey = AiConfig::apiKey('claude');
 
@@ -36,7 +36,7 @@ class ClaudeRewriter implements AiRewriter
                     'model'      => AiConfig::model('claude'),
                     'max_tokens' => 4096,
                     'thinking'   => ['type' => 'disabled'],
-                    'system'     => RewritePrompt::system($language),
+                    'system'     => RewritePrompt::system($language, $categories),
                     'messages'   => [[
                         'role'    => 'user',
                         'content' => RewritePrompt::userMessage($title, $body),

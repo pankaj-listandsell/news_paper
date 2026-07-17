@@ -11,7 +11,7 @@ class NewsSource extends Model
     protected $fillable = [
         'name', 'feed_url', 'category_id', 'user_id',
         'is_active', 'auto_publish', 'fetch_full_content',
-        'ai_rewrite', 'ai_provider', 'ai_image', 'max_items',
+        'ai_rewrite', 'ai_provider', 'ai_image', 'ai_category', 'max_items',
         'last_scraped_at', 'last_error',
     ];
 
@@ -21,6 +21,7 @@ class NewsSource extends Model
         'fetch_full_content' => 'boolean',
         'ai_rewrite'         => 'boolean',
         'ai_image'           => 'boolean',
+        'ai_category'        => 'boolean',
         'last_scraped_at'    => 'datetime',
     ];
 

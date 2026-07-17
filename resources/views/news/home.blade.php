@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', config('app.name') . ' — Latest News')
+@section('title', \App\Support\SiteSettings::name() . ' — Aktuelle Nachrichten')
 
 @section('content')
     {{-- Hero: featured --}}
@@ -40,12 +40,12 @@
     <div class="mt-10 grid gap-10 lg:grid-cols-3">
         {{-- Main column --}}
         <div class="lg:col-span-2">
-            <h2 class="mb-4 border-b-2 border-red-600 pb-2 text-lg font-black uppercase">Latest News</h2>
+            <h2 class="mb-4 border-b-2 border-red-600 pb-2 text-lg font-black uppercase">Aktuelle Nachrichten</h2>
             <div class="grid gap-6 sm:grid-cols-2">
                 @forelse ($latest as $article)
                     @include('partials.article-card', ['article' => $article])
                 @empty
-                    <p class="text-gray-500">No articles published yet.</p>
+                    <p class="text-gray-500">Noch keine Artikel veröffentlicht.</p>
                 @endforelse
             </div>
 
@@ -54,7 +54,7 @@
                 <section class="mt-10">
                     <div class="mb-4 flex items-center justify-between border-b-2 border-gray-900 pb-2">
                         <h2 class="text-lg font-black uppercase">{{ $cat->name }}</h2>
-                        <a href="{{ route('category.show', $cat) }}" class="text-sm font-semibold text-red-600 hover:underline">View all →</a>
+                        <a href="{{ route('category.show', $cat) }}" class="text-sm font-semibold text-red-600 hover:underline">Alle ansehen →</a>
                     </div>
                     <div class="grid gap-6 sm:grid-cols-2">
                         @foreach ($cat->articles as $article)
@@ -67,14 +67,14 @@
 
         {{-- Sidebar --}}
         <aside>
-            <h2 class="mb-4 border-b-2 border-red-600 pb-2 text-lg font-black uppercase">Most Viewed</h2>
+            <h2 class="mb-4 border-b-2 border-red-600 pb-2 text-lg font-black uppercase">Meistgelesen</h2>
             <ol class="space-y-4">
                 @foreach ($mostViewed as $i => $article)
                     <li class="flex gap-3">
                         <span class="text-2xl font-black text-gray-300">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</span>
                         <a href="{{ route('article.show', $article) }}" class="text-sm font-semibold leading-snug hover:text-red-600">
                             {{ $article->title }}
-                            <span class="mt-1 block text-xs font-normal text-gray-400">{{ number_format($article->views) }} views</span>
+                            <span class="mt-1 block text-xs font-normal text-gray-400">{{ number_format($article->views) }} Aufrufe</span>
                         </a>
                     </li>
                 @endforeach

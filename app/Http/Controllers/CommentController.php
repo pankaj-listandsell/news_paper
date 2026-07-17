@@ -17,6 +17,6 @@ class CommentController extends Controller
 
         $article->comments()->create($data + ['is_approved' => false]);
 
-        return back()->with('comment_status', 'Your comment has been submitted for review and will appear once approved.');
+        return back()->with('comment_status', 'Ihr Kommentar wurde zur Prüfung eingereicht und erscheint nach der Freigabe.');
     }
 }

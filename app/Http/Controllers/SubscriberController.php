@@ -15,6 +15,6 @@ class SubscriberController extends Controller
 
         Subscriber::firstOrCreate(['email' => $data['email']], ['is_active' => true]);
 
-        return back()->with('subscribe_status', 'Thank you! You have been subscribed.');
+        return back()->with('subscribe_status', 'Vielen Dank! Sie haben sich erfolgreich angemeldet.');
     }
 }

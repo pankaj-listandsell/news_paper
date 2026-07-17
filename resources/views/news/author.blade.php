@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', $author->name . ' — ' . config('app.name'))
+@section('title', $author->name . ' — ' . \App\Support\SiteSettings::name())
 
 @section('content')
     <header class="mb-6 border-b-2 border-red-600 pb-3">
-        <p class="text-sm uppercase tracking-wide text-gray-500">Author</p>
+        <p class="text-sm uppercase tracking-wide text-gray-500">Autor</p>
         <h1 class="text-2xl font-black">{{ $author->name }}</h1>
     </header>
 
@@ -12,7 +12,7 @@
         @forelse ($articles as $article)
             @include('partials.article-card', ['article' => $article])
         @empty
-            <p class="text-gray-500">No articles by this author yet.</p>
+            <p class="text-gray-500">Von diesem Autor gibt es noch keine Artikel.</p>
         @endforelse
     </div>
 

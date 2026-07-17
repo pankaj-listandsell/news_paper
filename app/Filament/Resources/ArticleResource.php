@@ -208,9 +208,11 @@ class ArticleResource extends Resource
                         }
 
                         $record->update([
-                            'title'   => $result['title'],
-                            'excerpt' => $result['excerpt'] ?: $record->excerpt,
-                            'body'    => ! empty($result['body']) ? $result['body'] : $record->body,
+                            'title'            => $result['title'],
+                            'excerpt'          => $result['excerpt'] ?: $record->excerpt,
+                            'body'             => ! empty($result['body']) ? $result['body'] : $record->body,
+                            'meta_title'       => $result['meta_title'],
+                            'meta_description' => $result['meta_description'],
                         ]);
 
                         \Filament\Notifications\Notification::make()

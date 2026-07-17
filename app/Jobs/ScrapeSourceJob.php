@@ -135,11 +135,32 @@ class ScrapeSourceJob implements ShouldQueue
 
         $language = AiConfig::language();
 
+        // When AI categorisation is on, offer the model the site's categories.
+        $categories = $source->ai_category
+            ? \App\Models\Category::where('is_active', true)->pluck('id', 'name')
+            : collect();
+
         foreach ($records as $i => $data) {
-            $result = $rewriter->rewrite($data['title'], $data['body'] ?? '', $language);
+            $result = $rewriter->rewrite(
+                $data['title'],
+                $data['body'] ?? '',
+                $language,
+                $categories->keys()->all()
+            );
 
             if ($result === null) {
                 continue; // keep original title/excerpt
+            }
+
+            // Map the model's chosen category name back to an id (case-insensitive).
+            if (! empty($result['category'])) {
+                $matched = $categories->first(
+                    fn ($id, $name) => mb_strtolower($name) === mb_strtolower($result['category'])
+                );
+
+                if ($matched !== null) {
+                    $records[$i]['category_id'] = $matched;
+                }
             }
 
             $records[$i]['title']   = $result['title'];
@@ -149,6 +170,10 @@ class ScrapeSourceJob implements ShouldQueue
             if (! empty($result['body'])) {
                 $records[$i]['body'] = $result['body'];
             }
+
+            // SEO fields
+            $records[$i]['meta_title']       = $result['meta_title'];
+            $records[$i]['meta_description'] = $result['meta_description'];
 
             usleep(200_000); // gentle pacing between API calls
         }

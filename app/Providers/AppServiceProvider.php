@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Support\SiteSettings;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,8 +23,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Share navigation + breaking news with the public layout.
+        // Share navigation + breaking news + site settings with the public layout.
         View::composer('layouts.app', function ($view) {
+            $view->with('site', SiteSettings::all());
+            $view->with('siteLogo', SiteSettings::logoUrl());
+            $view->with('siteSocial', SiteSettings::socialLinks());
+
             $view->with('navCategories', Category::where('is_active', true)
                 ->orderBy('sort_order')
                 ->get());

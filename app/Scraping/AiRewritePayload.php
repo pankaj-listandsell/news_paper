@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 class AiRewritePayload
 {
     /**
-     * @return array{title:string, excerpt:string, body:string}|null
+     * @return array{title:string, excerpt:string, body:string, meta_title:string, meta_description:string, category:string}|null
      */
     public static function parse(string $text): ?array
     {
@@ -35,6 +35,9 @@ class AiRewritePayload
         $title   = trim((string) ($data['title'] ?? ''));
         $excerpt = trim((string) ($data['excerpt'] ?? ''));
         $body    = trim((string) ($data['body'] ?? ''));
+        $metaT   = trim((string) ($data['meta_title'] ?? ''));
+        $metaD   = trim((string) ($data['meta_description'] ?? ''));
+        $cat     = trim((string) ($data['category'] ?? ''));
 
         if ($title === '') {
             return null;
@@ -44,6 +47,11 @@ class AiRewritePayload
             'title'   => Str::limit($title, 250, ''),
             'excerpt' => Str::limit($excerpt, 500, ''),
             'body'    => self::toHtml($body),
+            // SEO fields — fall back to the headline/summary when the model omits them.
+            'meta_title'       => Str::limit($metaT !== '' ? $metaT : $title, 60, ''),
+            'meta_description' => Str::limit($metaD !== '' ? $metaD : $excerpt, 160, ''),
+            // Chosen category name; empty when not requested or nothing fit.
+            'category'         => $cat,
         ];
     }
 

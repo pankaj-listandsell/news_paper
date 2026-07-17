@@ -16,7 +16,7 @@ class OpenAiRewriter implements AiRewriter
         return filled(AiConfig::apiKey('openai'));
     }
 
-    public function rewrite(string $title, string $body, string $language): ?array
+    public function rewrite(string $title, string $body, string $language, array $categories = []): ?array
     {
         $apiKey = AiConfig::apiKey('openai');
 
@@ -33,7 +33,7 @@ class OpenAiRewriter implements AiRewriter
                     'max_tokens'      => 4096,
                     'response_format' => ['type' => 'json_object'],
                     'messages'        => [
-                        ['role' => 'system', 'content' => RewritePrompt::system($language)],
+                        ['role' => 'system', 'content' => RewritePrompt::system($language, $categories)],
                         ['role' => 'user',   'content' => RewritePrompt::userMessage($title, $body)],
                     ],
                 ]);

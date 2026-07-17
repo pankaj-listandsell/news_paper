@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '#' . $tag->name . ' — ' . config('app.name'))
+@section('title', '#' . $tag->name . ' — ' . \App\Support\SiteSettings::name())
 
 @section('content')
     <header class="mb-6 border-b-2 border-red-600 pb-3">
@@ -11,7 +11,7 @@
         @forelse ($articles as $article)
             @include('partials.article-card', ['article' => $article])
         @empty
-            <p class="text-gray-500">No articles for this tag yet.</p>
+            <p class="text-gray-500">Zu diesem Thema gibt es noch keine Artikel.</p>
         @endforelse
     </div>
 

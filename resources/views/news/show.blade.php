@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', ($article->meta_title ?: $article->title) . ' — ' . config('app.name'))
+@section('title', ($article->meta_title ?: $article->title) . ' — ' . \App\Support\SiteSettings::name())
 @section('meta_description', $article->meta_description ?: $article->excerpt)
 
 @section('content')
@@ -22,11 +22,11 @@
                     <a href="{{ route('author.show', $article->author) }}" class="font-semibold text-gray-700 hover:text-red-600">{{ $article->author->name }}</a>
                 @endif
                 <span>&middot;</span>
-                <span>{{ $article->published_at?->translatedFormat('d F Y, H:i') }}</span>
+                <span>{{ $article->published_at?->locale('de')->translatedFormat('d. F Y, H:i') }} Uhr</span>
                 <span>&middot;</span>
-                <span>{{ $article->reading_time }} min read</span>
+                <span>{{ $article->reading_time }} Min. Lesezeit</span>
                 <span>&middot;</span>
-                <span>{{ number_format($article->views) }} views</span>
+                <span>{{ number_format($article->views) }} Aufrufe</span>
             </div>
 
             <img src="{{ $article->image_url }}" alt="{{ $article->title }}"
@@ -38,10 +38,10 @@
 
             @if ($article->source_url)
                 <div class="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
-                    <span class="text-gray-600">This story was originally published at:</span>
+                    <span class="text-gray-600">Diese Meldung erschien ursprünglich bei:</span>
                     <a href="{{ $article->source_url }}" target="_blank" rel="noopener nofollow"
                        class="ml-1 font-semibold text-red-600 hover:underline">
-                        {{ $article->source_name ?: 'Original source' }} ↗
+                        {{ $article->source_name ?: 'Originalquelle' }} ↗
                     </a>
                 </div>
             @endif
@@ -57,7 +57,7 @@
 
             {{-- Comments --}}
             <section class="mt-12">
-                <h2 class="text-xl font-black">Comments ({{ $article->comments->count() }})</h2>
+                <h2 class="text-xl font-black">Kommentare ({{ $article->comments->count() }})</h2>
 
                 @if (session('comment_status'))
                     <div class="mt-4 rounded-md bg-green-50 p-3 text-sm text-green-700">{{ session('comment_status') }}</div>
@@ -73,37 +73,37 @@
                             <p class="mt-2 text-sm text-gray-700">{{ $comment->body }}</p>
                         </div>
                     @empty
-                        <p class="text-sm text-gray-500">No comments yet. Be the first to comment!</p>
+                        <p class="text-sm text-gray-500">Noch keine Kommentare. Schreiben Sie den ersten!</p>
                     @endforelse
                 </div>
 
                 {{-- Comment form --}}
                 <form action="{{ route('comments.store', $article) }}" method="POST" class="mt-8 rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-100">
                     @csrf
-                    <h3 class="font-bold">Leave a comment</h3>
+                    <h3 class="font-bold">Kommentar schreiben</h3>
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         <div>
-                            <input type="text" name="author_name" value="{{ old('author_name') }}" placeholder="Your name"
+                            <input type="text" name="author_name" value="{{ old('author_name') }}" placeholder="Ihr Name"
                                    class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
                             @error('author_name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
-                            <input type="email" name="author_email" value="{{ old('author_email') }}" placeholder="Your email"
+                            <input type="email" name="author_email" value="{{ old('author_email') }}" placeholder="Ihre E-Mail"
                                    class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
                             @error('author_email')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
                     </div>
-                    <textarea name="body" rows="4" placeholder="Your comment..."
+                    <textarea name="body" rows="4" placeholder="Ihr Kommentar..."
                               class="mt-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none">{{ old('body') }}</textarea>
                     @error('body')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                    <button class="mt-4 rounded-md bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700">Post comment</button>
+                    <button class="mt-4 rounded-md bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700">Kommentar absenden</button>
                 </form>
             </section>
         </article>
 
         {{-- Sidebar: related --}}
         <aside>
-            <h2 class="mb-4 border-b-2 border-red-600 pb-2 text-lg font-black uppercase">Related</h2>
+            <h2 class="mb-4 border-b-2 border-red-600 pb-2 text-lg font-black uppercase">Ähnliche Artikel</h2>
             <div class="space-y-6">
                 @foreach ($related as $item)
                     @include('partials.article-card', ['article' => $item])

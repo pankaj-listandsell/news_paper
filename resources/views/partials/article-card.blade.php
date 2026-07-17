@@ -18,7 +18,7 @@
         <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
             <span>{{ $article->byline }}</span>
             <span>&middot;</span>
-            <span>{{ $article->published_at?->format('d M Y') }}</span>
+            <span>{{ $article->published_at?->locale('de')->translatedFormat('d. M Y') }}</span>
         </div>
     </div>
 </article>

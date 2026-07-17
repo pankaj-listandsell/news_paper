@@ -44,11 +44,11 @@ class NewsSourceResource extends Resource
 
                 Forms\Components\Section::make('Mapping & behaviour')->schema([
                     Forms\Components\Select::make('category_id')
-                        ->label('Assign to category')
+                        ->label('Default category')
                         ->relationship('category', 'name')
                         ->searchable()
                         ->preload()
-                        ->helperText('All news from this source goes into this category.'),
+                        ->helperText('Used for every article, unless "AI picks category" is on — then it is the fallback.'),
                     Forms\Components\Select::make('user_id')
                         ->label('Attribute to author (optional)')
                         ->relationship('author', 'name')
@@ -75,6 +75,11 @@ class NewsSourceResource extends Resource
                         ->placeholder('Use default (AI Settings)')
                         ->visible(fn (Forms\Get $get) => $get('ai_rewrite'))
                         ->helperText('Empty = use the default provider from AI Settings.'),
+                    Forms\Components\Toggle::make('ai_category')
+                        ->label('AI picks category')
+                        ->default(false)
+                        ->visible(fn (Forms\Get $get) => $get('ai_rewrite'))
+                        ->helperText('ON = AI reads each article and files it under the best matching category. Falls back to the default category above.'),
                     Forms\Components\Toggle::make('ai_image')
                         ->label('Generate AI image')
                         ->default(false)
@@ -116,6 +121,9 @@ class NewsSourceResource extends Resource
                 Tables\Columns\IconColumn::make('ai_image')
                     ->boolean()
                     ->label('Img'),
+                Tables\Columns\IconColumn::make('ai_category')
+                    ->boolean()
+                    ->label('Cat'),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('last_scraped_at')
