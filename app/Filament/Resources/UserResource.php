@@ -26,27 +26,59 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->revealable()
-                    ->required(fn (string $operation) => $operation === 'create')
-                    ->dehydrated(fn (?string $state) => filled($state))
-                    ->dehydrateStateUsing(fn (string $state) => Hash::make($state))
-                    ->helperText('Leave blank when editing to keep the current password.'),
-                Forms\Components\Select::make('roles')
-                    ->relationship('roles', 'name')
-                    ->multiple()
-                    ->preload()
-                    ->searchable()
-                    ->helperText('admin / editor / author'),
+                Forms\Components\Section::make('Account')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('email')
+                            ->email()
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('password')
+                            ->password()
+                            ->revealable()
+                            ->required(fn (string $operation) => $operation === 'create')
+                            ->dehydrated(fn (?string $state) => filled($state))
+                            ->dehydrateStateUsing(fn (string $state) => Hash::make($state))
+                            ->helperText('Leave blank when editing to keep the current password.'),
+                        Forms\Components\Select::make('roles')
+                            ->relationship('roles', 'name')
+                            ->multiple()
+                            ->preload()
+                            ->searchable()
+                            ->helperText('admin / editor / author'),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Author profile')
+                    ->description('Shown on the public author page and next to their articles.')
+                    ->schema([
+                        Forms\Components\FileUpload::make('avatar')
+                            ->label('Photo')
+                            ->image()
+                            ->avatar()
+                            ->disk('public')
+                            ->directory('authors')
+                            ->imageEditor(),
+                        Forms\Components\TextInput::make('designation')
+                            ->label('Role / title')
+                            ->placeholder('Senior Reporter')
+                            ->maxLength(120),
+                        Forms\Components\Textarea::make('bio')
+                            ->label('Biography')
+                            ->rows(4)
+                            ->maxLength(1000)
+                            ->helperText('A short intro shown on the author page.')
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('website')->url()->maxLength(255),
+                        Forms\Components\TextInput::make('twitter')->label('X (Twitter)')->url()->maxLength(255),
+                        Forms\Components\TextInput::make('linkedin')->label('LinkedIn')->url()->maxLength(255),
+                        Forms\Components\Toggle::make('show_on_frontend')
+                            ->label('Show author page publicly')
+                            ->default(true)
+                            ->helperText('OFF = their author page returns 404.'),
+                    ])->columns(2),
             ]);
     }
 
@@ -55,12 +87,19 @@ class UserResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
+                Tables\Columns\ImageColumn::make('avatar')
+                    ->disk('public')
+                    ->circular()
+                    ->label('')
+                    ->defaultImageUrl(fn ($record) => $record->avatar_url),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn ($record) => $record->designation),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('roles.name')
                     ->badge()
                     ->color('primary')

@@ -3,7 +3,7 @@
 @section('title', 'Suche — ' . \App\Support\SiteSettings::name())
 
 @section('content')
-    <header class="mb-6 border-b-2 border-red-600 pb-3">
+    <header class="mb-6 border-b-2 border-[var(--brand)] pb-3">
         <h1 class="text-2xl font-black">Suchergebnisse</h1>
         @if ($q !== '')
             <p class="mt-1 text-gray-600">{{ $articles->total() }} Ergebnisse für „<span class="font-semibold">{{ $q }}</span>"</p>

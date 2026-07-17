@@ -26,6 +26,14 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        // Author profile
+        'avatar',
+        'designation',
+        'bio',
+        'website',
+        'twitter',
+        'linkedin',
+        'show_on_frontend',
     ];
 
     /**
@@ -48,7 +56,34 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'show_on_frontend' => 'boolean',
         ];
+    }
+
+    /**
+     * Author photo, or an initials-based placeholder when none is uploaded.
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if ($this->avatar) {
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar);
+        }
+
+        return 'https://placehold.co/200x200/1f2937/ffffff?text=' . urlencode(mb_substr($this->name, 0, 1));
+    }
+
+    /**
+     * Social/profile links that are actually filled in.
+     *
+     * @return array<string, string> label => url
+     */
+    public function getProfileLinksAttribute(): array
+    {
+        return array_filter([
+            'Website'  => $this->website,
+            'X'        => $this->twitter,
+            'LinkedIn' => $this->linkedin,
+        ], fn ($url) => filled($url));
     }
 
     /**

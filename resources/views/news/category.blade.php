@@ -3,7 +3,7 @@
 @section('title', $category->name . ' — ' . \App\Support\SiteSettings::name())
 
 @section('content')
-    <header class="mb-6 border-b-2 border-red-600 pb-3">
+    <header class="mb-6 border-b-2 border-[var(--brand)] pb-3">
         <h1 class="text-2xl font-black uppercase">{{ $category->name }}</h1>
         @if ($category->description)
             <p class="mt-1 text-gray-600">{{ $category->description }}</p>

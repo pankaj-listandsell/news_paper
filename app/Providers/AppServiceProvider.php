@@ -27,7 +27,9 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', function ($view) {
             $view->with('site', SiteSettings::all());
             $view->with('siteLogo', SiteSettings::logoUrl());
+            $view->with('siteFavicon', SiteSettings::faviconUrl());
             $view->with('siteSocial', SiteSettings::socialLinks());
+            $view->with('brand', SiteSettings::brandColors());
 
             $view->with('navCategories', Category::where('is_active', true)
                 ->orderBy('sort_order')

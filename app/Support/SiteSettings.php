@@ -21,6 +21,8 @@ class SiteSettings
         'site_tagline'     => 'Aktuelle Nachrichten, Analysen und Updates – den ganzen Tag.',
         'site_description' => 'Aktuelle Nachrichten, Eilmeldungen und Analysen.',
         'site_logo'        => '',
+        'site_favicon'     => '',
+        'brand_color'      => '#dc2626',
         'newsletter_text'  => 'Abonnieren Sie, um aktuelle Nachrichten per E-Mail zu erhalten.',
         'copyright_text'   => 'Alle Rechte vorbehalten.',
         'contact_email'    => '',
@@ -28,6 +30,9 @@ class SiteSettings
         'social_twitter'   => '',
         'social_instagram' => '',
         'social_youtube'   => '',
+        // Tracking / verification
+        'google_analytics_id'      => '',
+        'google_site_verification' => '',
     ];
 
     public static function get(string $key): string
@@ -64,13 +69,56 @@ class SiteSettings
      */
     public static function logoUrl(): ?string
     {
-        $path = self::get('site_logo');
+        return self::fileUrl('site_logo');
+    }
+
+    /**
+     * Public URL of the uploaded favicon, or null when none is set.
+     */
+    public static function faviconUrl(): ?string
+    {
+        return self::fileUrl('site_favicon');
+    }
+
+    private static function fileUrl(string $key): ?string
+    {
+        $path = self::get($key);
 
         if ($path === '') {
             return null;
         }
 
         return Storage::disk('public')->url($path);
+    }
+
+    /**
+     * The brand colour plus a darker hover shade and a light tint,
+     * derived from the single colour the admin picks.
+     *
+     * @return array{base:string, dark:string, soft:string}
+     */
+    public static function brandColors(): array
+    {
+        $base = self::get('brand_color');
+
+        if (! preg_match('/^#[0-9a-f]{6}$/i', $base)) {
+            $base = self::DEFAULTS['brand_color'];
+        }
+
+        [$r, $g, $b] = sscanf($base, '#%02x%02x%02x');
+
+        return [
+            'base' => $base,
+            // ~15% darker, for hover states
+            'dark' => sprintf('#%02x%02x%02x', (int) ($r * 0.85), (int) ($g * 0.85), (int) ($b * 0.85)),
+            // ~8% tint on white, for subtle hover backgrounds
+            'soft' => sprintf(
+                '#%02x%02x%02x',
+                (int) ($r + (255 - $r) * 0.92),
+                (int) ($g + (255 - $g) * 0.92),
+                (int) ($b + (255 - $b) * 0.92)
+            ),
+        ];
     }
 
     /**

@@ -31,7 +31,10 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->profile()
-            ->brandName('News Paper')
+            ->brandName(fn (): string => \App\Support\SiteSettings::name())
+            ->brandLogo(fn (): ?string => \App\Support\SiteSettings::logoUrl())
+            ->brandLogoHeight('2rem')
+            ->favicon(fn (): ?string => \App\Support\SiteSettings::faviconUrl())
             ->colors([
                 'primary' => Color::Red,
             ])

@@ -8,7 +8,7 @@
         <article class="lg:col-span-2">
             @if ($article->category)
                 <a href="{{ route('category.show', $article->category) }}"
-                   class="text-sm font-bold uppercase tracking-wide text-red-600">{{ $article->category->name }}</a>
+                   class="text-sm font-bold uppercase tracking-wide text-[var(--brand)]">{{ $article->category->name }}</a>
             @endif
             <h1 class="mt-2 text-3xl font-black leading-tight md:text-4xl">{{ $article->title }}</h1>
             @if ($article->subtitle)
@@ -19,7 +19,7 @@
                 @if ($article->source_name)
                     <span class="font-semibold text-gray-700">{{ $article->source_name }}</span>
                 @elseif ($article->author)
-                    <a href="{{ route('author.show', $article->author) }}" class="font-semibold text-gray-700 hover:text-red-600">{{ $article->author->name }}</a>
+                    <a href="{{ route('author.show', $article->author) }}" class="font-semibold text-gray-700 hover:text-[var(--brand)]">{{ $article->author->name }}</a>
                 @endif
                 <span>&middot;</span>
                 <span>{{ $article->published_at?->locale('de')->translatedFormat('d. F Y, H:i') }} Uhr</span>
@@ -32,7 +32,7 @@
             <img src="{{ $article->image_url }}" alt="{{ $article->title }}"
                  class="mt-6 w-full rounded-xl object-cover">
 
-            <div class="prose prose-lg mt-6 max-w-none prose-a:text-red-600 prose-img:rounded-lg">
+            <div class="prose prose-lg mt-6 max-w-none prose-a:text-[var(--brand)] prose-img:rounded-lg">
                 {!! $article->body !!}
             </div>
 
@@ -40,7 +40,7 @@
                 <div class="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
                     <span class="text-gray-600">Diese Meldung erschien ursprünglich bei:</span>
                     <a href="{{ $article->source_url }}" target="_blank" rel="noopener nofollow"
-                       class="ml-1 font-semibold text-red-600 hover:underline">
+                       class="ml-1 font-semibold text-[var(--brand)] hover:underline">
                         {{ $article->source_name ?: 'Originalquelle' }} ↗
                     </a>
                 </div>
@@ -50,7 +50,7 @@
                 <div class="mt-8 flex flex-wrap gap-2">
                     @foreach ($article->tags as $tag)
                         <a href="{{ route('tag.show', $tag) }}"
-                           class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600">#{{ $tag->name }}</a>
+                           class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">#{{ $tag->name }}</a>
                     @endforeach
                 </div>
             @endif
@@ -84,26 +84,26 @@
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         <div>
                             <input type="text" name="author_name" value="{{ old('author_name') }}" placeholder="Ihr Name"
-                                   class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
+                                   class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none">
                             @error('author_name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <input type="email" name="author_email" value="{{ old('author_email') }}" placeholder="Ihre E-Mail"
-                                   class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
+                                   class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none">
                             @error('author_email')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
                     </div>
                     <textarea name="body" rows="4" placeholder="Ihr Kommentar..."
-                              class="mt-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none">{{ old('body') }}</textarea>
+                              class="mt-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none">{{ old('body') }}</textarea>
                     @error('body')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                    <button class="mt-4 rounded-md bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700">Kommentar absenden</button>
+                    <button class="mt-4 rounded-md bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Kommentar absenden</button>
                 </form>
             </section>
         </article>
 
         {{-- Sidebar: related --}}
         <aside>
-            <h2 class="mb-4 border-b-2 border-red-600 pb-2 text-lg font-black uppercase">Ähnliche Artikel</h2>
+            <h2 class="mb-4 border-b-2 border-[var(--brand)] pb-2 text-lg font-black uppercase">Ähnliche Artikel</h2>
             <div class="space-y-6">
                 @foreach ($related as $item)
                     @include('partials.article-card', ['article' => $item])

@@ -55,8 +55,18 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->disk('public')
                             ->directory('site')
                             ->imageEditor()
-                            ->helperText('Leave empty to show the website name as text instead.')
-                            ->columnSpanFull(),
+                            ->helperText('Shown in the masthead. Leave empty to show the website name as text.'),
+                        Forms\Components\FileUpload::make('site_favicon')
+                            ->label('Favicon')
+                            ->image()
+                            ->disk('public')
+                            ->directory('site')
+                            ->acceptedFileTypes(['image/png', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/svg+xml'])
+                            ->helperText('Browser tab icon. Square PNG, ICO or SVG — 32×32 or larger.'),
+                        Forms\Components\ColorPicker::make('brand_color')
+                            ->label('Brand colour')
+                            ->rule('regex:/^#[0-9a-fA-F]{6}$/')
+                            ->helperText('Accent colour across the public website — headlines, buttons, links, the breaking-news bar. Hover and tint shades are derived automatically.'),
                         Forms\Components\Textarea::make('site_description')
                             ->label('Default meta description (SEO)')
                             ->rows(2)
@@ -81,6 +91,21 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->maxLength(255)
                             ->columnSpanFull(),
                     ]),
+
+                Forms\Components\Section::make('Tracking & verification')
+                    ->description('Scripts are added to the public website only — never to this admin panel.')
+                    ->schema([
+                        Forms\Components\TextInput::make('google_analytics_id')
+                            ->label('Google Analytics ID')
+                            ->placeholder('G-XXXXXXXXXX')
+                            ->maxLength(40)
+                            ->rule('regex:/^$|^(G-[A-Z0-9]+|UA-[0-9]+-[0-9]+|GTM-[A-Z0-9]+)$/i')
+                            ->helperText('GA4 measurement ID from analytics.google.com. Leave empty to disable tracking.'),
+                        Forms\Components\TextInput::make('google_site_verification')
+                            ->label('Google Search Console code')
+                            ->maxLength(255)
+                            ->helperText('Only the content value of the verification meta tag.'),
+                    ])->columns(2),
 
                 Forms\Components\Section::make('Social links')
                     ->description('Leave empty to hide a link.')

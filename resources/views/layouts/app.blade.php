@@ -6,7 +6,37 @@
     <title>@yield('title', $site['site_name'])</title>
     <meta name="description" content="@yield('meta_description', $site['site_description'])">
     <link rel="preconnect" href="https://fonts.bunny.net">
+
+    @if ($siteFavicon)
+        <link rel="icon" href="{{ $siteFavicon }}">
+        <link rel="apple-touch-icon" href="{{ $siteFavicon }}">
+    @endif
+
+    @if ($site['google_site_verification'])
+        <meta name="google-site-verification" content="{{ $site['google_site_verification'] }}">
+    @endif
+
+    <style>
+        :root {
+            --brand: {{ $brand['base'] }};
+            --brand-dark: {{ $brand['dark'] }};
+            --brand-soft: {{ $brand['soft'] }};
+        }
+    </style>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- Google Analytics (public site only) --}}
+    @if ($site['google_analytics_id'])
+        @php $gaId = $site['google_analytics_id']; @endphp
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($gaId) }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', @json($gaId));
+        </script>
+    @endif
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased">
 
@@ -28,31 +58,31 @@
                 @if ($siteLogo)
                     <img src="{{ $siteLogo }}" alt="{{ $site['site_name'] }}" class="h-12 w-auto">
                 @else
-                    <span class="text-3xl font-black tracking-tight text-red-600">{{ $site['site_name'] }}</span>
+                    <span class="text-3xl font-black tracking-tight text-[var(--brand)]">{{ $site['site_name'] }}</span>
                 @endif
             </a>
             <form action="{{ route('search') }}" method="GET" class="hidden md:flex items-center">
                 <input type="text" name="q" value="{{ request('q') }}" placeholder="Nachrichten suchen..."
-                       class="w-64 rounded-l-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
-                <button class="rounded-r-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Los</button>
+                       class="w-64 rounded-l-md border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none">
+                <button class="rounded-r-md bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Los</button>
             </form>
         </div>
 
         {{-- Category nav --}}
         <nav class="border-t bg-white">
             <div class="mx-auto max-w-7xl px-4 flex flex-wrap items-center gap-x-6 gap-y-1 py-3 text-sm font-semibold">
-                <a href="{{ route('home') }}" class="text-red-600 hover:text-red-700">Startseite</a>
+                <a href="{{ route('home') }}" class="text-[var(--brand)] hover:text-[var(--brand-dark)]">Startseite</a>
                 @foreach ($navCategories as $cat)
-                    <a href="{{ route('category.show', $cat) }}" class="text-gray-700 hover:text-red-600">{{ $cat->name }}</a>
+                    <a href="{{ route('category.show', $cat) }}" class="text-gray-700 hover:text-[var(--brand)]">{{ $cat->name }}</a>
                 @endforeach
             </div>
         </nav>
 
         {{-- Breaking news ticker --}}
         @if ($breakingNews->isNotEmpty())
-            <div class="bg-red-600 text-white">
+            <div class="bg-[var(--brand)] text-white">
                 <div class="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3 overflow-hidden">
-                    <span class="shrink-0 rounded bg-white px-2 py-0.5 text-xs font-bold uppercase text-red-600">Eilmeldung</span>
+                    <span class="shrink-0 rounded bg-white px-2 py-0.5 text-xs font-bold uppercase text-[var(--brand)]">Eilmeldung</span>
                     <div class="flex gap-8 whitespace-nowrap text-sm animate-[marquee_25s_linear_infinite]">
                         @foreach ($breakingNews as $b)
                             <a href="{{ route('article.show', $b) }}" class="hover:underline">{{ $b->title }}</a>
@@ -107,7 +137,7 @@
                     @csrf
                     <input type="email" name="email" required placeholder="E-Mail-Adresse"
                            class="w-full rounded-l-md px-3 py-2 text-sm text-gray-900 focus:outline-none">
-                    <button class="rounded-r-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Anmelden</button>
+                    <button class="rounded-r-md bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Anmelden</button>
                 </form>
                 @error('email')<p class="mt-1 text-sm text-red-400">{{ $message }}</p>@enderror
             </div>

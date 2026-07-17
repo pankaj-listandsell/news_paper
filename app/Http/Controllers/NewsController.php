@@ -75,6 +75,8 @@ class NewsController extends Controller
 
     public function author(User $user)
     {
+        abort_unless($user->show_on_frontend, 404);
+
         $articles = $user->articles()->published()->with('category')
             ->latest('published_at')
             ->paginate(12);

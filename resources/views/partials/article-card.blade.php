@@ -7,10 +7,10 @@
     <div class="p-4">
         @if ($article->category)
             <a href="{{ route('category.show', $article->category) }}"
-               class="text-xs font-bold uppercase tracking-wide text-red-600">{{ $article->category->name }}</a>
+               class="text-xs font-bold uppercase tracking-wide text-[var(--brand)]">{{ $article->category->name }}</a>
         @endif
         <h3 class="mt-1 font-bold leading-snug text-gray-900">
-            <a href="{{ route('article.show', $article) }}" class="hover:text-red-600">{{ $article->title }}</a>
+            <a href="{{ route('article.show', $article) }}" class="hover:text-[var(--brand)]">{{ $article->title }}</a>
         </h3>
         @if ($article->excerpt)
             <p class="mt-2 text-sm text-gray-600 line-clamp-2">{{ $article->excerpt }}</p>
