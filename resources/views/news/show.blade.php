@@ -3,9 +3,62 @@
 @section('title', ($article->meta_title ?: $article->title) . ' — ' . \App\Support\SiteSettings::name())
 @section('meta_description', $article->meta_description ?: $article->excerpt)
 
+{{-- Link preview: real headline + article image --}}
+@section('og_type', 'article')
+@section('og_title', $article->meta_title ?: $article->title)
+@section('og_image', $article->image_url)
+
+@push('meta')
+    <meta property="article:published_time" content="{{ $article->published_at?->toIso8601String() }}">
+    @if ($article->category)
+        <meta property="article:section" content="{{ $article->category->name }}">
+    @endif
+    @foreach ($article->tags as $tag)
+        <meta property="article:tag" content="{{ $tag->name }}">
+    @endforeach
+
+    {{-- Structured data — Google News / rich results --}}
+    <script type="application/ld+json">
+    @php
+        $ld = [
+            '@context'         => 'https://schema.org',
+            '@type'            => 'NewsArticle',
+            'headline'         => Str::limit($article->title, 110, ''),
+            'description'      => $article->meta_description ?: $article->excerpt,
+            'image'            => [$article->image_url],
+            'datePublished'    => $article->published_at?->toIso8601String(),
+            'dateModified'     => $article->updated_at?->toIso8601String(),
+            'author'           => [
+                '@type' => 'Person',
+                'name'  => $article->byline,
+            ],
+            'publisher'        => [
+                '@type' => 'Organization',
+                'name'  => \App\Support\SiteSettings::name(),
+                'logo'  => [
+                    '@type' => 'ImageObject',
+                    'url'   => \App\Support\SiteSettings::logoUrl() ?? asset('favicon.ico'),
+                ],
+            ],
+            'mainEntityOfPage' => [
+                '@type' => 'WebPage',
+                '@id'   => route('article.show', $article),
+            ],
+            'articleSection'   => $article->category?->name,
+            'keywords'         => $article->tags->pluck('name')->implode(', '),
+        ];
+    @endphp
+    {!! json_encode(array_filter($ld), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
+@endpush
+
 @section('content')
+    {{-- Reading progress bar --}}
+    <div id="reading-progress"
+         class="fixed inset-x-0 top-0 z-50 h-1 origin-left scale-x-0 bg-[var(--brand)] transition-transform duration-75"></div>
+
     <div class="grid gap-10 lg:grid-cols-3">
-        <article class="lg:col-span-2">
+        <article id="article-body" class="lg:col-span-2">
             @if ($article->category)
                 <a href="{{ route('category.show', $article->category) }}"
                    class="text-sm font-bold uppercase tracking-wide text-[var(--brand)]">{{ $article->category->name }}</a>
@@ -35,6 +88,8 @@
             <div class="prose prose-lg mt-6 max-w-none prose-a:text-[var(--brand)] prose-img:rounded-lg">
                 {!! $article->body !!}
             </div>
+
+            @include('partials.share-buttons', ['article' => $article])
 
             @if ($article->source_url)
                 <div class="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
@@ -81,6 +136,13 @@
                 <form action="{{ route('comments.store', $article) }}" method="POST" class="mt-8 rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-100">
                     @csrf
                     <h3 class="font-bold">Kommentar schreiben</h3>
+
+                    {{-- Spam trap: hidden from people, tempting to bots. Never remove. --}}
+                    <div class="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                        <label for="hp_website">Website (bitte leer lassen)</label>
+                        <input type="text" id="hp_website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
+                    <input type="hidden" name="form_started_at" value="{{ encrypt(time()) }}">
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         <div>
                             <input type="text" name="author_name" value="{{ old('author_name') }}" placeholder="Ihr Name"
@@ -102,7 +164,7 @@
         </article>
 
         {{-- Sidebar: related --}}
-        <aside>
+        <aside class="lg:sticky lg:top-4 lg:self-start">
             <h2 class="mb-4 border-b-2 border-[var(--brand)] pb-2 text-lg font-black uppercase">Ähnliche Artikel</h2>
             <div class="space-y-6">
                 @foreach ($related as $item)
@@ -111,4 +173,25 @@
             </div>
         </aside>
     </div>
+
+    @push('scripts')
+        <script>
+            (function () {
+                const bar     = document.getElementById('reading-progress');
+                const article = document.getElementById('article-body');
+                if (!bar || !article) return;
+
+                const update = () => {
+                    const start = article.offsetTop;
+                    const total = article.offsetHeight - window.innerHeight;
+                    const done  = Math.min(Math.max((window.scrollY - start) / total, 0), 1);
+                    bar.style.transform = 'scaleX(' + done + ')';
+                };
+
+                update();
+                window.addEventListener('scroll', update, { passive: true });
+                window.addEventListener('resize', update, { passive: true });
+            })();
+        </script>
+    @endpush
 @endsection

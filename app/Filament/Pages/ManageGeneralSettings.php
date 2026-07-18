@@ -107,6 +107,24 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->helperText('Only the content value of the verification meta tag.'),
                     ])->columns(2),
 
+                Forms\Components\Section::make('Pages')
+                    ->description('Impressum and Datenschutz are required for German sites. Leave a field empty and that page returns 404.')
+                    ->collapsed()
+                    ->schema([
+                        Forms\Components\RichEditor::make('about_content')
+                            ->label('Über uns (About us)')
+                            ->helperText('Published at /ueber-uns and linked in the footer.')
+                            ->columnSpanFull(),
+                        Forms\Components\RichEditor::make('imprint_content')
+                            ->label('Impressum')
+                            ->helperText('Published at /impressum and linked in the footer.')
+                            ->columnSpanFull(),
+                        Forms\Components\RichEditor::make('privacy_content')
+                            ->label('Datenschutzerklärung')
+                            ->helperText('Published at /datenschutz and linked in the footer.')
+                            ->columnSpanFull(),
+                    ]),
+
                 Forms\Components\Section::make('Social links')
                     ->description('Leave empty to hide a link.')
                     ->collapsed()

@@ -5,7 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', $site['site_name'])</title>
     <meta name="description" content="@yield('meta_description', $site['site_description'])">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <link rel="alternate" type="application/rss+xml" title="{{ $site['site_name'] }} RSS" href="{{ route('rss') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
+
+    {{-- Open Graph / Twitter — link previews when the page is shared --}}
+    <meta property="og:site_name" content="{{ $site['site_name'] }}">
+    <meta property="og:locale" content="de_DE">
+    <meta property="og:type" content="@yield('og_type', 'website')">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="@yield('og_title', $site['site_name'])">
+    <meta property="og:description" content="@yield('meta_description', $site['site_description'])">
+    <meta property="og:image" content="@yield('og_image', $siteLogo ?? asset('build/assets/og-default.png'))">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('og_title', $site['site_name'])">
+    <meta name="twitter:description" content="@yield('meta_description', $site['site_description'])">
+    <meta name="twitter:image" content="@yield('og_image', $siteLogo ?? asset('build/assets/og-default.png'))">
+    @stack('meta')
 
     @if ($siteFavicon)
         <link rel="icon" href="{{ $siteFavicon }}">
@@ -143,6 +160,18 @@
             </div>
         </div>
         <div class="border-t border-gray-800 py-4 text-center text-xs text-gray-500">
+            <div class="mb-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
+                @if (strip_tags($site['about_content']) !== '')
+                    <a href="{{ route('page', 'ueber-uns') }}" class="hover:text-white">Über uns</a>
+                @endif
+                @if (strip_tags($site['imprint_content']) !== '')
+                    <a href="{{ route('page', 'impressum') }}" class="hover:text-white">Impressum</a>
+                @endif
+                @if (strip_tags($site['privacy_content']) !== '')
+                    <a href="{{ route('page', 'datenschutz') }}" class="hover:text-white">Datenschutz</a>
+                @endif
+                <a href="{{ route('rss') }}" class="hover:text-white">RSS</a>
+            </div>
             &copy; {{ now()->year }} {{ $site['site_name'] }}. {{ $site['copyright_text'] }}
         </div>
     </footer>
@@ -150,5 +179,7 @@
     <style>
         @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     </style>
+
+    @stack('scripts')
 </body>
 </html>

@@ -9,7 +9,7 @@ class ArticlesChart extends ChartWidget
 {
     protected static ?string $heading = 'Articles published';
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 3;
 
     protected static ?string $maxHeight = '260px';
 

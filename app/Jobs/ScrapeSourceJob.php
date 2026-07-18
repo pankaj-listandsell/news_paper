@@ -50,7 +50,19 @@ class ScrapeSourceJob implements ShouldQueue
                 $records = $this->enrichWithAiImage($records);
             }
 
+            $detector  = new \App\Support\DuplicateDetector();
+            $skipped   = 0;
+
             foreach ($records as $data) {
+                $isNew = ! Article::where('source_url', $data['source_url'])->exists();
+
+                // Skip a brand-new article that duplicates a recent story from
+                // another source. Existing articles are still updated.
+                if ($isNew && $detector->isDuplicate($data['title'], $data['source_url'])) {
+                    $skipped++;
+                    continue;
+                }
+
                 $article = Article::updateOrCreate(
                     ['source_url' => $data['source_url']], // dedup key
                     $data
@@ -63,9 +75,15 @@ class ScrapeSourceJob implements ShouldQueue
                 'last_scraped_at' => now(),
                 'last_error'      => null,
             ]);
+
+            if ($skipped > 0) {
+                Log::info("Skipped {$skipped} duplicate article(s) from source {$this->source->id}.");
+            }
         } catch (\Throwable $e) {
             $this->source->update(['last_error' => $e->getMessage()]);
             Log::warning("Scrape failed for source {$this->source->id}: {$e->getMessage()}");
+
+            $this->alertAdmin($e->getMessage());
 
             throw $e;
         }
@@ -77,6 +95,36 @@ class ScrapeSourceJob implements ShouldQueue
     {
         // RSS-only for now; swap here when HTML/API scrapers are added.
         return new RssScraper();
+    }
+
+    /**
+     * Email the admin when a source breaks — at most once per hour per
+     * source, so a permanently broken feed can't flood the inbox.
+     */
+    private function alertAdmin(string $error): void
+    {
+        $key = "scrape-alert-sent:{$this->source->id}";
+
+        if (\Illuminate\Support\Facades\Cache::has($key)) {
+            return;
+        }
+
+        $to = \App\Support\SiteSettings::get('contact_email')
+            ?: \App\Models\User::query()->oldest('id')->value('email');
+
+        if (blank($to)) {
+            return;
+        }
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($to)
+                ->send(new \App\Mail\ScrapeFailed($this->source, $error));
+
+            \Illuminate\Support\Facades\Cache::put($key, true, now()->addHour());
+        } catch (\Throwable $e) {
+            // Never let a mail problem mask the original scrape error.
+            Log::warning('Could not send scrape alert: ' . $e->getMessage());
+        }
     }
 
     /**

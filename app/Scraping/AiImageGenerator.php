@@ -43,8 +43,11 @@ class AiImageGenerator
             return null;
         }
 
-        $path = 'articles/ai/' . Str::uuid() . '.png';
-        Storage::disk('public')->put($path, $bytes);
+        // Resize + re-encode: ~1.4 MB PNG becomes a ~100 KB WebP.
+        $image = \App\Support\ImageOptimizer::optimize($bytes);
+
+        $path = 'articles/ai/' . Str::uuid() . '.' . $image['extension'];
+        Storage::disk('public')->put($path, $image['bytes']);
 
         return $path;
     }
@@ -75,6 +78,14 @@ class AiImageGenerator
 
                 return null;
             }
+
+            \App\Models\AiUsage::record(
+                'openai',
+                config('ai.providers.openai.image_model', 'gpt-image-1'),
+                'image',
+                (int) $response->json('usage.input_tokens', 0),
+                (int) $response->json('usage.output_tokens', 0),
+            );
 
             if ($b64 = $response->json('data.0.b64_json')) {
                 return base64_decode($b64);

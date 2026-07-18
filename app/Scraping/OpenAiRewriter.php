@@ -44,6 +44,14 @@ class OpenAiRewriter implements AiRewriter
                 return null;
             }
 
+            \App\Models\AiUsage::record(
+                'openai',
+                AiConfig::model('openai'),
+                'text',
+                (int) $response->json('usage.prompt_tokens', 0),
+                (int) $response->json('usage.completion_tokens', 0),
+            );
+
             $text = $response->json('choices.0.message.content', '');
 
             return AiRewritePayload::parse($text);

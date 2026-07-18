@@ -33,6 +33,10 @@ class SiteSettings
         // Tracking / verification
         'google_analytics_id'      => '',
         'google_site_verification' => '',
+        // Content pages (imprint + privacy are required for German sites)
+        'about_content'   => '',
+        'imprint_content' => '',
+        'privacy_content' => '',
     ];
 
     public static function get(string $key): string

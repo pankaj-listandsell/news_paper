@@ -51,6 +51,14 @@ class ClaudeRewriter implements AiRewriter
 
             $data = $response->json();
 
+            \App\Models\AiUsage::record(
+                'claude',
+                AiConfig::model('claude'),
+                'text',
+                (int) ($data['usage']['input_tokens'] ?? 0),
+                (int) ($data['usage']['output_tokens'] ?? 0),
+            );
+
             if (($data['stop_reason'] ?? null) === 'refusal') {
                 Log::info('Claude refused rewrite request.');
 
