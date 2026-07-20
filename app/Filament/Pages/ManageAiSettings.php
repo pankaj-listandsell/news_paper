@@ -41,6 +41,8 @@ class ManageAiSettings extends Page implements HasForms
         'ai_claude_model',
         'ai_openai_api_key',
         'ai_openai_model',
+        'ai_openai_image_model',
+        'ai_openai_image_quality',
     ];
 
     public function mount(): void
@@ -55,6 +57,8 @@ class ManageAiSettings extends Page implements HasForms
         $values['ai_language']      = $values['ai_language']      ?: config('ai.language');
         $values['ai_claude_model']  = $values['ai_claude_model']  ?: config('ai.providers.claude.model');
         $values['ai_openai_model']  = $values['ai_openai_model']  ?: config('ai.providers.openai.model');
+        $values['ai_openai_image_model']   = $values['ai_openai_image_model']   ?: AiConfig::imageModel();
+        $values['ai_openai_image_quality'] = $values['ai_openai_image_quality'] ?: AiConfig::imageQuality();
 
         $this->form->fill($values);
     }
@@ -99,8 +103,23 @@ class ManageAiSettings extends Page implements HasForms
                             ->placeholder('sk-...')
                             ->helperText('Get it from platform.openai.com.'),
                         Forms\Components\TextInput::make('ai_openai_model')
-                            ->label('Model')
-                            ->placeholder('gpt-4o-mini'),
+                            ->label('Text model')
+                            ->placeholder('gpt-4o-mini')
+                            ->helperText('Used for rewriting title/description/body.'),
+                        Forms\Components\Select::make('ai_openai_image_model')
+                            ->label('Image model')
+                            ->options(AiConfig::imageModelOptions())
+                            ->native(false)
+                            ->helperText('Used for AI image generation.'),
+                        Forms\Components\Select::make('ai_openai_image_quality')
+                            ->label('Image quality')
+                            ->options([
+                                'low'    => 'Low (cheapest)',
+                                'medium' => 'Medium',
+                                'high'   => 'High (most expensive)',
+                            ])
+                            ->native(false)
+                            ->helperText('Higher quality costs more per image.'),
                     ])->columns(2),
             ])
             ->statePath('data');

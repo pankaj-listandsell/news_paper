@@ -66,11 +66,11 @@ class AiImageGenerator
                 ->timeout(120)
                 ->retry(2, 1000, throw: false) // transient network/SSL errors
                 ->post(config('ai.providers.openai.image_url'), [
-                    'model'   => config('ai.providers.openai.image_model', 'gpt-image-1'),
+                    'model'   => AiConfig::imageModel(),
                     'prompt'  => $prompt,
                     'n'       => 1,
                     'size'    => config('ai.providers.openai.image_size', '1024x1024'),
-                    'quality' => config('ai.providers.openai.image_quality', 'low'),
+                    'quality' => AiConfig::imageQuality(),
                 ]);
 
             if (! $response->successful()) {
@@ -81,7 +81,7 @@ class AiImageGenerator
 
             \App\Models\AiUsage::record(
                 'openai',
-                config('ai.providers.openai.image_model', 'gpt-image-1'),
+                AiConfig::imageModel(),
                 'image',
                 (int) $response->json('usage.input_tokens', 0),
                 (int) $response->json('usage.output_tokens', 0),

@@ -61,7 +61,8 @@ class RssScraper implements SourceScraper
 
         return collect($items)
             ->filter(fn ($item) => $item['title'] !== '' && $item['link'] !== '')
-            ->take($source->max_items)
+            // max_items of 0 = no limit (import every item the feed offers).
+            ->when($source->max_items > 0, fn ($c) => $c->take($source->max_items))
             ->map(function (array $item) use ($source, $status) {
                 $publishedAt = $item['published']
                     ? Carbon::instance($item['published'])

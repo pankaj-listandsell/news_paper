@@ -54,12 +54,17 @@ class NewsSourceResource extends Resource
                         ->relationship('author', 'name')
                         ->searchable()
                         ->preload(),
+                    Forms\Components\Toggle::make('import_new_only')
+                        ->label('Only new articles')
+                        ->default(true)
+                        ->helperText('ON = only import articles published after the last run — no old backfill. Exactly the posts added since you last fetched.'),
                     Forms\Components\TextInput::make('max_items')
+                        ->label('Max items per run')
                         ->numeric()
-                        ->default(20)
-                        ->minValue(1)
-                        ->maxValue(100)
-                        ->helperText('Maximum items to import per run.'),
+                        ->default(0)
+                        ->minValue(0)
+                        ->maxValue(200)
+                        ->helperText('0 = no limit. A safety cap on how many items one run may import.'),
                     Forms\Components\Toggle::make('fetch_full_content')
                         ->label('Fetch full article')
                         ->default(false)

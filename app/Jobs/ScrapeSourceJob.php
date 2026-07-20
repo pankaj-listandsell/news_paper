@@ -33,10 +33,22 @@ class ScrapeSourceJob implements ShouldQueue
         $created = 0;
         $updated = 0;
 
+        // Capture the cutoff BEFORE fetching so we don't miss anything.
+        $cutoff = $this->source->last_scraped_at;
+
         try {
             $raw     = $scraper->fetch($this->source);
             $items   = $scraper->parse($raw);
             $records = $scraper->normalize($items, $this->source);
+
+            // "Only new" — keep articles published after the previous run.
+            // Done BEFORE the AI/full-content steps so old posts cost nothing.
+            if ($this->source->import_new_only && $cutoff) {
+                $records = array_values(array_filter(
+                    $records,
+                    fn ($r) => isset($r['published_at']) && $r['published_at']->gt($cutoff)
+                ));
+            }
 
             if ($this->source->fetch_full_content) {
                 $records = $this->enrichWithFullContent($records);

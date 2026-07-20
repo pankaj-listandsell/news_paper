@@ -32,6 +32,31 @@ class AiConfig
             ?: config("ai.providers.{$provider}.model", '');
     }
 
+    public static function imageModel(): string
+    {
+        return Setting::get('ai_openai_image_model')
+            ?: config('ai.providers.openai.image_model', 'gpt-image-1');
+    }
+
+    public static function imageQuality(): string
+    {
+        return Setting::get('ai_openai_image_quality')
+            ?: config('ai.providers.openai.image_quality', 'low');
+    }
+
+    /**
+     * @return array<string, string>  model id => label
+     */
+    public static function imageModelOptions(): array
+    {
+        return [
+            'gpt-image-2'      => 'gpt-image-2 (newest, best quality)',
+            'gpt-image-1.5'    => 'gpt-image-1.5',
+            'gpt-image-1'      => 'gpt-image-1',
+            'gpt-image-1-mini' => 'gpt-image-1-mini (cheapest)',
+        ];
+    }
+
     /**
      * @return array<string, string> provider key => human label
      */

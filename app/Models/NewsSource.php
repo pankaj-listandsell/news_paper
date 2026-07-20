@@ -25,7 +25,7 @@ class NewsSource extends Model
         'name', 'feed_url', 'category_id', 'user_id',
         'is_active', 'auto_publish', 'fetch_full_content',
         'ai_rewrite', 'ai_provider', 'ai_image', 'ai_category', 'max_items',
-        'last_scraped_at', 'last_error',
+        'import_new_only', 'last_scraped_at', 'last_error',
     ];
 
     protected $casts = [
@@ -35,6 +35,7 @@ class NewsSource extends Model
         'ai_rewrite'         => 'boolean',
         'ai_image'           => 'boolean',
         'ai_category'        => 'boolean',
+        'import_new_only'    => 'boolean',
         'last_scraped_at'    => 'datetime',
     ];
 
