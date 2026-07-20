@@ -31,7 +31,11 @@ class ManageGeneralSettings extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->form->fill(SiteSettings::all());
+        $values = SiteSettings::all();
+        // TagsInput needs an array, not the stored comma string.
+        $values['scrape_times'] = SiteSettings::scrapeTimes();
+
+        $this->form->fill($values);
     }
 
     public function form(Form $form): Form
@@ -92,6 +96,22 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->columnSpanFull(),
                     ]),
 
+                Forms\Components\Section::make('Scraping schedule')
+                    ->description('When the news scraper runs (German time). Needs the schedule:run cron active on the server.')
+                    ->schema([
+                        Forms\Components\Select::make('scrape_frequency')
+                            ->label('Run')
+                            ->options(SiteSettings::scrapeFrequencyOptions())
+                            ->default('times')
+                            ->required()
+                            ->live(),
+                        Forms\Components\TagsInput::make('scrape_times')
+                            ->label('Times')
+                            ->placeholder('06:00')
+                            ->helperText('Add times like 06:00, 14:00, 23:00 — the scraper runs at each (24h, German time). Press Enter after each.')
+                            ->visible(fn (Forms\Get $get) => $get('scrape_frequency') === 'times'),
+                    ])->columns(2),
+
                 Forms\Components\Section::make('Tracking & verification')
                     ->description('Scripts are added to the public website only — never to this admin panel.')
                     ->schema([
@@ -141,7 +161,14 @@ class ManageGeneralSettings extends Page implements HasForms
     public function save(): void
     {
         foreach ($this->form->getState() as $key => $value) {
-            Setting::set($key, is_array($value) ? (reset($value) ?: '') : (string) $value);
+            if (is_array($value)) {
+                // Times are a list (store comma-separated); uploads are a single path.
+                $value = $key === 'scrape_times'
+                    ? implode(',', $value)
+                    : (reset($value) ?: '');
+            }
+
+            Setting::set($key, (string) $value);
         }
 
         Notification::make()

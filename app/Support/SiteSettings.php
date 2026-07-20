@@ -37,15 +37,57 @@ class SiteSettings
         'about_content'   => '',
         'imprint_content' => '',
         'privacy_content' => '',
+        // Scraping schedule
+        'scrape_frequency' => 'times',
+        'scrape_times'     => '06:00,14:00,23:00',
     ];
 
     public static function get(string $key): string
     {
-        $value = Setting::get($key);
+        // Guarded so it never breaks console commands run before the
+        // settings table exists (e.g. during the first migrate).
+        try {
+            $value = Setting::get($key);
+        } catch (\Throwable) {
+            $value = null;
+        }
 
         return $value !== null && $value !== ''
             ? (string) $value
             : (self::DEFAULTS[$key] ?? '');
+    }
+
+    public static function scrapeFrequency(): string
+    {
+        return self::get('scrape_frequency') ?: 'times';
+    }
+
+    /**
+     * Valid HH:MM times the scrape should run at (specific-times mode).
+     *
+     * @return array<int, string>
+     */
+    public static function scrapeTimes(): array
+    {
+        $times = array_filter(
+            array_map('trim', explode(',', self::get('scrape_times'))),
+            fn ($t) => preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $t)
+        );
+
+        return array_values($times) ?: ['06:00', '14:00', '23:00'];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function scrapeFrequencyOptions(): array
+    {
+        return [
+            'times'    => 'At specific times each day',
+            'hourly'   => 'Every hour',
+            'every_30' => 'Every 30 minutes',
+            'every_15' => 'Every 15 minutes',
+        ];
     }
 
     /**
