@@ -34,6 +34,10 @@ class SiteSettings
         // Tracking / verification
         'google_analytics_id'      => '',
         'google_site_verification' => '',
+        // Search engine indexing ('1' = allow, '0' = noindex)
+        'search_indexing'          => '1',
+        // Show the comment section on articles ('1' = on, '0' = off)
+        'comments_enabled'         => '1',
         // Content pages (imprint + privacy are required for German sites)
         'about_content'   => '',
         'imprint_content' => '',
@@ -71,6 +75,14 @@ class SiteSettings
     public static function scrapeNotify(): bool
     {
         return self::get('scrape_notify') === '1';
+    }
+
+    /**
+     * Whether the comment section is shown (and accepts new comments).
+     */
+    public static function commentsEnabled(): bool
+    {
+        return self::get('comments_enabled') !== '0';
     }
 
     /**

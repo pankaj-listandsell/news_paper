@@ -104,8 +104,10 @@ class ManageGeneralSettings extends Page implements HasForms
         $values = SiteSettings::all();
         // TagsInput needs an array, not the stored comma string.
         $values['scrape_times'] = SiteSettings::scrapeTimes();
-        // Toggle needs a real boolean, not the stored '1'/'0' string.
+        // Toggles need a real boolean, not the stored '1'/'0' string.
         $values['scrape_notify'] = SiteSettings::scrapeNotify();
+        $values['search_indexing'] = SiteSettings::get('search_indexing') !== '0';
+        $values['comments_enabled'] = SiteSettings::commentsEnabled();
         // SMTP fields (password is never prefilled).
         $values = array_merge($values, SiteSettings::mailSettings());
 
@@ -273,6 +275,14 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->label('Google Search Console code')
                             ->maxLength(255)
                             ->helperText('Only the content value of the verification meta tag.'),
+                        Forms\Components\Toggle::make('search_indexing')
+                            ->label('Allow search engines to index this site')
+                            ->helperText('Turn off while the site is in testing — adds a "noindex, nofollow" tag so Google stays away. Turn on before going live.')
+                            ->columnSpanFull(),
+                        Forms\Components\Toggle::make('comments_enabled')
+                            ->label('Show the comment section on articles')
+                            ->helperText('Turn off to hide comments (and stop new ones) across the whole site.')
+                            ->columnSpanFull(),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Pages')

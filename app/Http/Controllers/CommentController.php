@@ -17,6 +17,9 @@ class CommentController extends Controller
 
     public function store(Request $request, Article $article)
     {
+        // Comments switched off in admin — reject any direct posts too.
+        abort_unless(\App\Support\SiteSettings::commentsEnabled(), 404);
+
         // Layer 1 — honeypot. Only a bot fills the hidden field.
         // Pretend it worked so the bot doesn't learn to adapt.
         if (filled($request->input('website'))) {

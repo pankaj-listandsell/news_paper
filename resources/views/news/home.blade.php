@@ -8,14 +8,14 @@
         @php $lead = $featured->first(); $rest = $featured->slice(1); @endphp
         <section class="grid gap-6 lg:grid-cols-3">
             <a href="{{ route('article.show', $lead) }}"
-               class="group relative col-span-2 overflow-hidden rounded-xl bg-gray-900 text-white">
+               class="group relative overflow-hidden rounded-xl bg-gray-900 text-white lg:col-span-2">
                 <img src="{{ $lead->image_url }}" alt="{{ $lead->title }}"
-                     class="h-96 w-full object-cover opacity-70 transition duration-300 group-hover:scale-105 group-hover:opacity-60">
-                <div class="absolute bottom-0 p-6">
+                     class="h-64 w-full object-cover opacity-70 transition duration-300 group-hover:scale-105 group-hover:opacity-60 sm:h-80 lg:h-96">
+                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 sm:p-6">
                     @if ($lead->category)
                         <span class="rounded bg-[var(--brand)] px-2 py-0.5 text-xs font-bold uppercase">{{ $lead->category->name }}</span>
                     @endif
-                    <h2 class="mt-3 text-3xl font-black leading-tight">{{ $lead->title }}</h2>
+                    <h2 class="mt-3 text-2xl font-black leading-tight sm:text-3xl">{{ $lead->title }}</h2>
                     <p class="mt-2 max-w-2xl text-sm text-gray-200 line-clamp-2">{{ $lead->excerpt }}</p>
                 </div>
             </a>

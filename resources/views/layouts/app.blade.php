@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', $site['site_name'])</title>
     <meta name="description" content="@yield('meta_description', $site['site_description'])">
+    @if (($site['search_indexing'] ?? '1') === '0')
+        <meta name="robots" content="noindex, nofollow">
+    @endif
     <link rel="canonical" href="{{ url()->current() }}">
     <link rel="alternate" type="application/rss+xml" title="{{ $site['site_name'] }} RSS" href="{{ route('rss') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -58,46 +61,53 @@
 <body class="bg-gray-50 text-gray-900 antialiased">
 
     {{-- Masthead --}}
-    <header class="bg-white border-b">
-        <div class="mx-auto max-w-7xl px-4 py-6 flex items-center justify-between gap-4">
+    <header class="border-b bg-white">
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:py-6">
             <a href="{{ route('home') }}" class="flex items-center gap-2">
                 @if ($siteLogo)
-                    <img src="{{ $siteLogo }}" alt="{{ $site['site_name'] }}" class="h-12 w-auto">
+                    <img src="{{ $siteLogo }}" alt="{{ $site['site_name'] }}" class="h-10 w-auto md:h-12">
                 @else
-                    <span class="text-3xl font-black tracking-tight text-[var(--brand)]">{{ $site['site_name'] }}</span>
+                    <span class="text-2xl font-black tracking-tight text-[var(--brand)] md:text-3xl">{{ $site['site_name'] }}</span>
                 @endif
             </a>
-            <form action="{{ route('search') }}" method="GET" class="hidden md:flex items-center">
+            <form action="{{ route('search') }}" method="GET" class="hidden items-center md:flex">
                 <input type="text" name="q" value="{{ request('q') }}" placeholder="Nachrichten suchen..."
                        class="w-64 rounded-l-md border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none">
                 <button class="rounded-r-md bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Los</button>
             </form>
         </div>
 
-        {{-- Category nav --}}
-        <nav class="border-t bg-white">
-            <div class="mx-auto max-w-7xl px-4 flex flex-wrap items-center gap-x-6 gap-y-1 py-3 text-sm font-semibold">
-                <a href="{{ route('home') }}" class="text-[var(--brand)] hover:text-[var(--brand-dark)]">Startseite</a>
-                @foreach ($navCategories as $cat)
-                    <a href="{{ route('category.show', $cat) }}" class="text-gray-700 hover:text-[var(--brand)]">{{ $cat->name }}</a>
-                @endforeach
-            </div>
-        </nav>
+        {{-- Mobile search --}}
+        <form action="{{ route('search') }}" method="GET" class="flex border-t px-4 py-2 md:hidden">
+            <input type="text" name="q" value="{{ request('q') }}" placeholder="Nachrichten suchen..."
+                   class="w-full rounded-l-md border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none">
+            <button class="rounded-r-md bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Los</button>
+        </form>
+    </header>
 
-        {{-- Breaking news ticker --}}
-        @if ($breakingNews->isNotEmpty())
-            <div class="bg-[var(--brand)] text-white">
-                <div class="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3 overflow-hidden">
-                    <span class="shrink-0 rounded bg-white px-2 py-0.5 text-xs font-bold uppercase text-[var(--brand)]">Eilmeldung</span>
-                    <div class="flex gap-8 whitespace-nowrap text-sm animate-[marquee_25s_linear_infinite]">
-                        @foreach ($breakingNews as $b)
-                            <a href="{{ route('article.show', $b) }}" class="hover:underline">{{ $b->title }}</a>
-                        @endforeach
-                    </div>
+    {{-- Category nav — scrolls sideways on mobile, sticks to the top on scroll --}}
+    <nav class="sticky top-0 z-30 border-b bg-white shadow-sm">
+        <div class="no-scrollbar mx-auto flex max-w-7xl items-center gap-x-6 overflow-x-auto whitespace-nowrap px-4 py-3 text-sm font-semibold">
+            <a href="{{ route('home') }}" class="shrink-0 text-[var(--brand)] hover:text-[var(--brand-dark)]">Startseite</a>
+            @foreach ($navCategories as $cat)
+                <a href="{{ route('category.show', $cat) }}" class="shrink-0 text-gray-700 hover:text-[var(--brand)]">{{ $cat->name }}</a>
+            @endforeach
+        </div>
+    </nav>
+
+    {{-- Breaking news ticker --}}
+    @if ($breakingNews->isNotEmpty())
+        <div class="bg-[var(--brand)] text-white">
+            <div class="mx-auto flex max-w-7xl items-center gap-3 overflow-hidden px-4 py-2">
+                <span class="shrink-0 rounded bg-white px-2 py-0.5 text-xs font-bold uppercase text-[var(--brand)]">Eilmeldung</span>
+                <div class="flex gap-8 whitespace-nowrap text-sm animate-[marquee_25s_linear_infinite]">
+                    @foreach ($breakingNews as $b)
+                        <a href="{{ route('article.show', $b) }}" class="hover:underline">{{ $b->title }}</a>
+                    @endforeach
                 </div>
             </div>
-        @endif
-    </header>
+        </div>
+    @endif
 
     <main class="mx-auto max-w-7xl px-4 py-8">
         @yield('content')
@@ -167,6 +177,8 @@
 
     <style>
         @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
     @stack('scripts')

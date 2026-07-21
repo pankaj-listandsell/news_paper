@@ -91,16 +91,6 @@
 
             @include('partials.share-buttons', ['article' => $article])
 
-            @if ($article->source_url)
-                <div class="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
-                    <span class="text-gray-600">Diese Meldung erschien ursprünglich bei:</span>
-                    <a href="{{ $article->source_url }}" target="_blank" rel="noopener nofollow"
-                       class="ml-1 font-semibold text-[var(--brand)] hover:underline">
-                        {{ $article->source_name ?: 'Originalquelle' }} ↗
-                    </a>
-                </div>
-            @endif
-
             @if ($article->tags->isNotEmpty())
                 <div class="mt-8 flex flex-wrap gap-2">
                     @foreach ($article->tags as $tag)
@@ -111,6 +101,7 @@
             @endif
 
             {{-- Comments --}}
+            @if (\App\Support\SiteSettings::commentsEnabled())
             <section class="mt-12">
                 <h2 class="text-xl font-black">Kommentare ({{ $article->comments->count() }})</h2>
 
@@ -161,6 +152,7 @@
                     <button class="mt-4 rounded-md bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Kommentar absenden</button>
                 </form>
             </section>
+            @endif
         </article>
 
         {{-- Sidebar: related --}}
