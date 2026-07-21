@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Setting;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -40,6 +41,8 @@ class SiteSettings
         // Scraping schedule
         'scrape_frequency' => 'times',
         'scrape_times'     => '06:00,14:00,23:00',
+        // Email a run summary after each scrape ('1' = on, '0' = off)
+        'scrape_notify'    => '0',
     ];
 
     public static function get(string $key): string
@@ -60,6 +63,120 @@ class SiteSettings
     public static function scrapeFrequency(): string
     {
         return self::get('scrape_frequency') ?: 'times';
+    }
+
+    /**
+     * Whether to email a summary to the admin after each scrape run.
+     */
+    public static function scrapeNotify(): bool
+    {
+        return self::get('scrape_notify') === '1';
+    }
+
+    /**
+     * Where scrape notifications go: the contact email, else the oldest
+     * admin user's address. Null when neither exists.
+     */
+    public static function notifyRecipient(): ?string
+    {
+        $email = self::get('contact_email');
+
+        if ($email !== '') {
+            return $email;
+        }
+
+        return \App\Models\User::query()->oldest('id')->value('email');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mail (SMTP) — configured from the admin, overrides .env at runtime.
+    | These keys are deliberately NOT in DEFAULTS so credentials never leak
+    | into the public view data shared by all().
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * True once a host + username are saved — i.e. admin SMTP is in use.
+     */
+    public static function mailConfigured(): bool
+    {
+        return self::get('mail_host') !== '' && self::get('mail_username') !== '';
+    }
+
+    /**
+     * The stored SMTP password, decrypted. Falls back to the raw value for
+     * any legacy plaintext entry.
+     */
+    public static function mailPassword(): string
+    {
+        $stored = self::get('mail_password');
+
+        if ($stored === '') {
+            return '';
+        }
+
+        try {
+            return Crypt::decryptString($stored);
+        } catch (\Throwable) {
+            return $stored;
+        }
+    }
+
+    /**
+     * Mail fields for prefilling the settings form (password omitted — it is
+     * never sent back to the browser).
+     *
+     * @return array<string, string>
+     */
+    public static function mailSettings(): array
+    {
+        return [
+            'mail_mailer'       => self::get('mail_mailer') ?: 'smtp',
+            'mail_host'         => self::get('mail_host'),
+            'mail_port'         => self::get('mail_port') ?: '587',
+            'mail_username'     => self::get('mail_username'),
+            'mail_local_domain' => self::get('mail_local_domain') ?: 'localhost',
+            'mail_from_address' => self::get('mail_from_address'),
+            'mail_from_name'    => self::get('mail_from_name'),
+        ];
+    }
+
+    /**
+     * Point Laravel's mailer at the admin-configured SMTP account. No-op when
+     * nothing is saved, so the .env config keeps working as a fallback.
+     */
+    public static function applyMailConfig(): void
+    {
+        $mailer = self::get('mail_mailer') ?: 'smtp';
+        $host   = self::get('mail_host');
+
+        // Nothing configured for SMTP — leave the .env config in charge.
+        if ($mailer === 'smtp' && $host === '') {
+            return;
+        }
+
+        config(['mail.default' => $mailer]);
+
+        if ($mailer === 'smtp') {
+            // 465 = implicit SSL, everything else (587/25) = STARTTLS.
+            $port = (int) (self::get('mail_port') ?: 587);
+
+            config([
+                'mail.mailers.smtp.transport'    => 'smtp',
+                'mail.mailers.smtp.host'         => $host,
+                'mail.mailers.smtp.port'         => $port,
+                'mail.mailers.smtp.username'     => self::get('mail_username'),
+                'mail.mailers.smtp.password'     => self::mailPassword(),
+                'mail.mailers.smtp.encryption'   => $port === 465 ? 'ssl' : 'tls',
+                'mail.mailers.smtp.local_domain' => self::get('mail_local_domain') ?: null,
+            ]);
+        }
+
+        config([
+            'mail.from.address' => self::get('mail_from_address') ?: self::get('mail_username'),
+            'mail.from.name'    => self::get('mail_from_name') ?: self::name(),
+        ]);
     }
 
     /**

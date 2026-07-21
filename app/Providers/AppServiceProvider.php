@@ -23,6 +23,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Route the mailer through the admin-configured SMTP account. Guarded
+        // so a missing settings table (first migrate) can't break booting.
+        try {
+            SiteSettings::applyMailConfig();
+        } catch (\Throwable) {
+            // keep the .env mail config as the fallback
+        }
+
         // Share navigation + breaking news + site settings with the public layout.
         View::composer('layouts.app', function ($view) {
             $view->with('site', SiteSettings::all());

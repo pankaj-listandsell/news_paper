@@ -4,12 +4,15 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use App\Support\SiteSettings;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 
 class ManageGeneralSettings extends Page implements HasForms
 {
@@ -29,11 +32,82 @@ class ManageGeneralSettings extends Page implements HasForms
 
     public ?array $data = [];
 
+    /**
+     * "Send test email" button in the page header — same action as the one
+     * inside the SMTP section, kept here for quick access.
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('sendTestEmailHeader')
+                ->label('Send test email')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('gray')
+                ->modalDescription('Sends a test message using the saved SMTP settings. Save your changes first.')
+                ->modalSubmitActionLabel('Send')
+                ->form([
+                    Forms\Components\TextInput::make('test_to')
+                        ->label('Send to')
+                        ->email()
+                        ->required()
+                        ->default(fn () => SiteSettings::notifyRecipient() ?: 'pankajlistandsell@gmail.com'),
+                ])
+                ->action(fn (array $data) => $this->sendTestEmail($data['test_to'])),
+        ];
+    }
+
+    /**
+     * Send a one-line test email using the currently saved SMTP settings and
+     * report the result as a notification. Shared by the header button and the
+     * button inside the "Email (SMTP)" section.
+     */
+    public function sendTestEmail(?string $to = null): void
+    {
+        $to = $to ?: SiteSettings::notifyRecipient();
+
+        if (blank($to)) {
+            Notification::make()
+                ->title('No recipient')
+                ->body('Enter an address to send the test to.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        // Use the latest saved SMTP settings for this send.
+        SiteSettings::applyMailConfig();
+
+        try {
+            Mail::raw(
+                'This is a test email from '.SiteSettings::name().'. Your SMTP settings work.',
+                fn ($m) => $m->to($to)->subject('Test email — '.SiteSettings::name())
+            );
+
+            Notification::make()
+                ->title('Test email sent')
+                ->body("Sent to {$to}. Check the inbox (and spam).")
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('Could not send')
+                ->body($e->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+        }
+    }
+
     public function mount(): void
     {
         $values = SiteSettings::all();
         // TagsInput needs an array, not the stored comma string.
         $values['scrape_times'] = SiteSettings::scrapeTimes();
+        // Toggle needs a real boolean, not the stored '1'/'0' string.
+        $values['scrape_notify'] = SiteSettings::scrapeNotify();
+        // SMTP fields (password is never prefilled).
+        $values = array_merge($values, SiteSettings::mailSettings());
 
         $this->form->fill($values);
     }
@@ -110,6 +184,80 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->placeholder('06:00')
                             ->helperText('Add times like 06:00, 14:00, 23:00 — the scraper runs at each (24h, German time). Press Enter after each.')
                             ->visible(fn (Forms\Get $get) => $get('scrape_frequency') === 'times'),
+                        Forms\Components\Toggle::make('scrape_notify')
+                            ->label('Email me a summary after each run')
+                            ->helperText('Sends a short report (new/updated articles, errors) to the contact email after every scrape. Turn off to stop the emails.')
+                            ->columnSpanFull(),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Email (SMTP)')
+                    ->description('Outgoing mail account for scrape reports and alerts. Leave empty to use the server default (.env). Save, then use “Send test email”.')
+                    ->collapsed()
+                    ->schema([
+                        Forms\Components\Select::make('mail_mailer')
+                            ->label('Mailer')
+                            ->options([
+                                'smtp'     => 'SMTP',
+                                'sendmail' => 'Sendmail',
+                                'log'      => 'Log (write to log file — no real send)',
+                            ])
+                            ->default('smtp')
+                            ->live(),
+                        Forms\Components\TextInput::make('mail_port')
+                            ->label('Port')
+                            ->numeric()
+                            ->placeholder('587')
+                            ->helperText('587 = STARTTLS · 465 = SSL')
+                            ->maxLength(5)
+                            ->visible(fn (Forms\Get $get) => $get('mail_mailer') === 'smtp'),
+                        Forms\Components\TextInput::make('mail_host')
+                            ->label('Host')
+                            ->placeholder('w01861c2.kasserver.com')
+                            ->maxLength(255)
+                            ->visible(fn (Forms\Get $get) => $get('mail_mailer') === 'smtp'),
+                        Forms\Components\TextInput::make('mail_username')
+                            ->label('Username')
+                            ->placeholder('dev@listandsell.de')
+                            ->maxLength(255)
+                            ->visible(fn (Forms\Get $get) => $get('mail_mailer') === 'smtp'),
+                        Forms\Components\TextInput::make('mail_password')
+                            ->label('Password')
+                            ->password()
+                            ->revealable()
+                            ->autocomplete('new-password')
+                            ->placeholder('Leave blank to keep the current password')
+                            ->maxLength(255)
+                            ->visible(fn (Forms\Get $get) => $get('mail_mailer') === 'smtp'),
+                        Forms\Components\TextInput::make('mail_local_domain')
+                            ->label('Local domain')
+                            ->placeholder('localhost')
+                            ->helperText('EHLO name — usually "localhost" or your domain.')
+                            ->maxLength(255)
+                            ->visible(fn (Forms\Get $get) => $get('mail_mailer') === 'smtp'),
+                        Forms\Components\TextInput::make('mail_from_name')
+                            ->label('Sender name')
+                            ->placeholder(fn () => SiteSettings::name())
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('mail_from_address')
+                            ->label('Sender email')
+                            ->email()
+                            ->placeholder('dev@listandsell.de')
+                            ->maxLength(255),
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('sendTestEmail')
+                                ->label('Send test mail')
+                                ->icon('heroicon-o-paper-airplane')
+                                ->modalDescription('Sends a test message using the saved SMTP settings. Save your changes first, then test.')
+                                ->modalSubmitActionLabel('Send')
+                                ->form([
+                                    Forms\Components\TextInput::make('test_to')
+                                        ->label('Send to')
+                                        ->email()
+                                        ->required()
+                                        ->default(fn () => SiteSettings::notifyRecipient() ?: 'pankajlistandsell@gmail.com'),
+                                ])
+                                ->action(fn (array $data) => $this->sendTestEmail($data['test_to'])),
+                        ])->columnSpanFull(),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Tracking & verification')
@@ -161,7 +309,20 @@ class ManageGeneralSettings extends Page implements HasForms
     public function save(): void
     {
         foreach ($this->form->getState() as $key => $value) {
-            if (is_array($value)) {
+            if ($key === 'mail_password') {
+                // Blank means "keep current". Otherwise store encrypted.
+                if (filled($value)) {
+                    Setting::set($key, Crypt::encryptString($value));
+                }
+
+                continue;
+            }
+
+            if (is_bool($value)) {
+                // Toggles: store an explicit '1'/'0' so "off" persists
+                // instead of collapsing to '' and falling back to the default.
+                $value = $value ? '1' : '0';
+            } elseif (is_array($value)) {
                 // Times are a list (store comma-separated); uploads are a single path.
                 $value = $key === 'scrape_times'
                     ? implode(',', $value)

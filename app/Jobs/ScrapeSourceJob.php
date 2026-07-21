@@ -50,17 +50,17 @@ class ScrapeSourceJob implements ShouldQueue
                 ));
             }
 
-            if ($this->source->fetch_full_content) {
-                $records = $this->enrichWithFullContent($records);
-            }
+            // Prepare the enrichment helpers once, up front. The costly per-
+            // article API calls happen INSIDE the loop below so that every
+            // article is saved the moment it's ready — a mid-run stop keeps
+            // (and bills for) only what actually got imported.
+            $extractor = $this->source->fetch_full_content
+                ? new ArticleContentExtractor()
+                : null;
 
-            if ($this->source->ai_rewrite) {
-                $records = $this->enrichWithAi($records, $this->source);
-            }
+            [$rewriter, $language, $categories] = $this->prepareAiRewriter($this->source);
 
-            if ($this->source->ai_image) {
-                $records = $this->enrichWithAiImage($records);
-            }
+            $imageGenerator = $this->prepareAiImageGenerator();
 
             $detector  = new \App\Support\DuplicateDetector();
             $skipped   = 0;
@@ -69,10 +69,22 @@ class ScrapeSourceJob implements ShouldQueue
                 $isNew = ! Article::where('source_url', $data['source_url'])->exists();
 
                 // Skip a brand-new article that duplicates a recent story from
-                // another source. Existing articles are still updated.
+                // another source — BEFORE spending any money enriching it.
+                // Existing articles are still updated.
                 if ($isNew && $detector->isDuplicate($data['title'], $data['source_url'])) {
                     $skipped++;
                     continue;
+                }
+
+                // Enrich just this one article, then persist it immediately.
+                if ($extractor) {
+                    $data = $this->applyFullContent($extractor, $data);
+                }
+                if ($rewriter) {
+                    $data = $this->applyAiRewrite($rewriter, $data, $language, $categories);
+                }
+                if ($imageGenerator) {
+                    $data = $this->applyAiImage($imageGenerator, $data);
                 }
 
                 $article = Article::updateOrCreate(
@@ -140,136 +152,151 @@ class ScrapeSourceJob implements ShouldQueue
     }
 
     /**
-     * Replace the RSS summary with the full article body pulled from
-     * each article's own page (Readability extraction).
+     * Pull the full article body from its own page (Readability) for a
+     * single record. Returns the record unchanged when extraction fails.
      *
-     * @param  array<int, array<string, mixed>>  $records
-     * @return array<int, array<string, mixed>>
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
      */
-    private function enrichWithFullContent(array $records): array
+    private function applyFullContent(ArticleContentExtractor $extractor, array $data): array
     {
-        $extractor = new ArticleContentExtractor();
+        $extracted = $extractor->extract($data['source_url']);
 
-        foreach ($records as $i => $data) {
-            $extracted = $extractor->extract($data['source_url']);
-
-            if ($extracted === null) {
-                continue; // keep RSS summary as fallback
-            }
-
-            $records[$i]['body'] = $extracted['body'];
-
-            // Prefer the RSS image; fall back to the one Readability found.
-            if (empty($data['featured_image']) && $extracted['image']) {
-                $records[$i]['featured_image'] = $extracted['image'];
-            }
-
-            // Fill excerpt only if the feed didn't provide one.
-            if (empty($data['excerpt']) && $extracted['excerpt']) {
-                $records[$i]['excerpt'] = $extracted['excerpt'];
-            }
-
-            usleep(300_000); // 0.3s politeness delay between page fetches
+        if ($extracted === null) {
+            return $data; // keep RSS summary as fallback
         }
 
-        return $records;
+        $data['body'] = $extracted['body'];
+
+        // Prefer the RSS image; fall back to the one Readability found.
+        if (empty($data['featured_image']) && $extracted['image']) {
+            $data['featured_image'] = $extracted['image'];
+        }
+
+        // Fill excerpt only if the feed didn't provide one.
+        if (empty($data['excerpt']) && $extracted['excerpt']) {
+            $data['excerpt'] = $extracted['excerpt'];
+        }
+
+        usleep(300_000); // 0.3s politeness delay between page fetches
+
+        return $data;
     }
 
     /**
-     * Rewrite each record's title + excerpt with AI (Claude or OpenAI).
-     * Falls back to the original text when the provider isn't configured
-     * or a call fails.
+     * Build the AI rewriter once, resolving language + category list. Returns
+     * [null, null, empty] when the provider isn't configured, so the caller
+     * simply skips rewriting.
      *
-     * @param  array<int, array<string, mixed>>  $records
-     * @return array<int, array<string, mixed>>
+     * @return array{0: mixed, 1: ?string, 2: \Illuminate\Support\Collection}
      */
-    private function enrichWithAi(array $records, NewsSource $source): array
+    private function prepareAiRewriter(NewsSource $source): array
     {
+        if (! $source->ai_rewrite) {
+            return [null, null, collect()];
+        }
+
         $rewriter = AiRewriterFactory::make($source->ai_provider);
 
         if (! $rewriter->isConfigured()) {
             Log::info("AI rewrite skipped for source {$source->id}: provider not configured.");
 
-            return $records;
+            return [null, null, collect()];
         }
-
-        $language = AiConfig::language();
 
         // When AI categorisation is on, offer the model the site's categories.
         $categories = $source->ai_category
             ? \App\Models\Category::where('is_active', true)->pluck('id', 'name')
             : collect();
 
-        foreach ($records as $i => $data) {
-            $result = $rewriter->rewrite(
-                $data['title'],
-                $data['body'] ?? '',
-                $language,
-                $categories->keys()->all()
-            );
-
-            if ($result === null) {
-                continue; // keep original title/excerpt
-            }
-
-            // Map the model's chosen category name back to an id (case-insensitive).
-            if (! empty($result['category'])) {
-                $matched = $categories->first(
-                    fn ($id, $name) => mb_strtolower($name) === mb_strtolower($result['category'])
-                );
-
-                if ($matched !== null) {
-                    $records[$i]['category_id'] = $matched;
-                }
-            }
-
-            $records[$i]['title']   = $result['title'];
-            $records[$i]['excerpt'] = $result['excerpt'] ?: ($data['excerpt'] ?? null);
-
-            // Replace the full body only when the model returned one.
-            if (! empty($result['body'])) {
-                $records[$i]['body'] = $result['body'];
-            }
-
-            // SEO fields
-            $records[$i]['meta_title']       = $result['meta_title'];
-            $records[$i]['meta_description'] = $result['meta_description'];
-
-            usleep(200_000); // gentle pacing between API calls
-        }
-
-        return $records;
+        return [$rewriter, AiConfig::language(), $categories];
     }
 
     /**
-     * Generate a fresh AI illustration per article and store it locally,
-     * replacing the hotlinked source image.
+     * Rewrite a single record's title + excerpt (and SEO fields) with AI.
+     * Falls back to the original text when the call fails.
      *
-     * @param  array<int, array<string, mixed>>  $records
-     * @return array<int, array<string, mixed>>
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
      */
-    private function enrichWithAiImage(array $records): array
+    private function applyAiRewrite($rewriter, array $data, ?string $language, \Illuminate\Support\Collection $categories): array
     {
+        $result = $rewriter->rewrite(
+            $data['title'],
+            $data['body'] ?? '',
+            $language,
+            $categories->keys()->all()
+        );
+
+        if ($result === null) {
+            return $data; // keep original title/excerpt
+        }
+
+        // Map the model's chosen category name back to an id (case-insensitive).
+        if (! empty($result['category'])) {
+            $matched = $categories->first(
+                fn ($id, $name) => mb_strtolower($name) === mb_strtolower($result['category'])
+            );
+
+            if ($matched !== null) {
+                $data['category_id'] = $matched;
+            }
+        }
+
+        $data['title']   = $result['title'];
+        $data['excerpt'] = $result['excerpt'] ?: ($data['excerpt'] ?? null);
+
+        // Replace the full body only when the model returned one.
+        if (! empty($result['body'])) {
+            $data['body'] = $result['body'];
+        }
+
+        // SEO fields
+        $data['meta_title']       = $result['meta_title'];
+        $data['meta_description'] = $result['meta_description'];
+
+        usleep(200_000); // gentle pacing between API calls
+
+        return $data;
+    }
+
+    /**
+     * Build the AI image generator, or null when the OpenAI key is missing.
+     */
+    private function prepareAiImageGenerator(): ?\App\Scraping\AiImageGenerator
+    {
+        if (! $this->source->ai_image) {
+            return null;
+        }
+
         $generator = new \App\Scraping\AiImageGenerator();
 
         if (! $generator->isConfigured()) {
             Log::info('AI image skipped: OpenAI key not configured.');
 
-            return $records;
+            return null;
         }
 
-        $context = $this->source->category?->name;
+        return $generator;
+    }
 
-        foreach ($records as $i => $data) {
-            $path = $generator->generate($data['title'], $context);
+    /**
+     * Generate a fresh AI illustration for one article and store it locally,
+     * replacing the hotlinked source image.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function applyAiImage(\App\Scraping\AiImageGenerator $generator, array $data): array
+    {
+        $path = $generator->generate($data['title'], $this->source->category?->name);
 
-            if ($path !== null) {
-                $records[$i]['featured_image'] = $path; // local disk path
-            }
-
-            usleep(300_000);
+        if ($path !== null) {
+            $data['featured_image'] = $path; // local disk path
         }
 
-        return $records;
+        usleep(300_000);
+
+        return $data;
     }
 }
