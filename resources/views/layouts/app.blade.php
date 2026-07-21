@@ -57,17 +57,6 @@
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased">
 
-    {{-- Top bar --}}
-    <div class="bg-gray-900 text-gray-300 text-xs">
-        <div class="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between">
-            <span>{{ now()->locale('de')->translatedFormat('l, d. F Y') }}</span>
-            <nav class="flex gap-4">
-                <a href="{{ route('home') }}" class="hover:text-white">Startseite</a>
-                <a href="/admin" class="hover:text-white">Admin</a>
-            </nav>
-        </div>
-    </div>
-
     {{-- Masthead --}}
     <header class="bg-white border-b">
         <div class="mx-auto max-w-7xl px-4 py-6 flex items-center justify-between gap-4">
