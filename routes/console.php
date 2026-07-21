@@ -16,7 +16,8 @@ Artisan::command('inspire', function () {
  */
 $scrape = fn () => Schedule::command('news:scrape --sync')
     ->timezone('Europe/Berlin')
-    ->withoutOverlapping();
+    ->withoutOverlapping()
+    ->evenInMaintenanceMode();
 
 switch (SiteSettings::scrapeFrequency()) {
     case 'every_15':
