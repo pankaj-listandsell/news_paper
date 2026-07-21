@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Jobs\ScrapeSourceJob;
 use App\Mail\ScrapeReport;
+use App\Mail\ScrapeStarted;
 use App\Models\NewsSource;
 use App\Support\SiteSettings;
 use Illuminate\Console\Command;
@@ -43,6 +44,14 @@ class ScrapeNews extends Command
             return self::SUCCESS;
         }
 
+        // Notify only for sync runs (queued jobs finish later, off the console)
+        // and only when the admin turned summary emails on.
+        $notify = $this->option('sync') && SiteSettings::scrapeNotify();
+
+        if ($notify) {
+            $this->sendStartedNotice($sources->pluck('name')->all());
+        }
+
         $report = [];
 
         foreach ($sources as $source) {
@@ -61,13 +70,33 @@ class ScrapeNews extends Command
             }
         }
 
-        // Email a summary — only for sync runs (queued jobs finish later, so
-        // there are no results to report here) and only when the admin opted in.
-        if ($this->option('sync') && $report !== [] && SiteSettings::scrapeNotify()) {
+        // Email the summary once the run is done.
+        if ($notify && $report !== []) {
             $this->sendReport($report);
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Mail a "scrape started" notice with the list of sources. Failures are
+     * logged, never fatal.
+     *
+     * @param  array<int, string>  $sourceNames
+     */
+    private function sendStartedNotice(array $sourceNames): void
+    {
+        $to = SiteSettings::notifyRecipient();
+
+        if (blank($to)) {
+            return;
+        }
+
+        try {
+            Mail::to($to)->send(new ScrapeStarted($sourceNames, now()->format('d M Y, H:i')));
+        } catch (\Throwable $e) {
+            Log::warning('Could not send scrape start notice: ' . $e->getMessage());
+        }
     }
 
     /**
