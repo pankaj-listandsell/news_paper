@@ -73,6 +73,19 @@
 
     <div class="grid gap-10 lg:grid-cols-3">
         <article id="article-body" class="lg:col-span-2">
+            {{-- Breadcrumb --}}
+            <nav aria-label="Breadcrumb" class="mb-4 text-xs text-gray-500">
+                <ol class="flex flex-wrap items-center gap-1.5">
+                    <li><a href="{{ route('home') }}" class="hover:text-[var(--brand)]">Startseite</a></li>
+                    @if ($article->category)
+                        <li aria-hidden="true" class="text-gray-300">›</li>
+                        <li><a href="{{ route('category.show', $article->category) }}" class="hover:text-[var(--brand)]">{{ $article->category->name }}</a></li>
+                    @endif
+                    <li aria-hidden="true" class="text-gray-300">›</li>
+                    <li class="max-w-[16rem] truncate text-gray-700" aria-current="page">{{ $article->title }}</li>
+                </ol>
+            </nav>
+
             @if ($article->category)
                 <a href="{{ route('category.show', $article->category) }}"
                    class="text-sm font-bold uppercase tracking-wide text-[var(--brand)]">{{ $article->category->name }}</a>
