@@ -193,8 +193,8 @@
                 <form action="{{ route('subscribe') }}" method="POST" class="mt-3 flex">
                     @csrf
                     <input type="email" name="email" required placeholder="E-Mail-Adresse"
-                           class="w-full rounded-l-md px-3 py-2 text-sm text-gray-900 focus:outline-none">
-                    <button class="rounded-r-md bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Anmelden</button>
+                           class="w-full rounded-l-md border-0 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none">
+                    <button class="shrink-0 rounded-r-md bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Anmelden</button>
                 </form>
                 @error('email')<p class="mt-1 text-sm text-red-400">{{ $message }}</p>@enderror
             </div>
