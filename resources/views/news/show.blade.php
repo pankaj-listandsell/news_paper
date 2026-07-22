@@ -50,6 +50,20 @@
     @endphp
     {!! json_encode(array_filter($ld), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
     </script>
+
+    {{-- Breadcrumbs — rich results in Google --}}
+    <script type="application/ld+json">
+    @php
+        $crumbs = [['@type' => 'ListItem', 'position' => 1, 'name' => 'Startseite', 'item' => route('home')]];
+        $pos = 2;
+        if ($article->category) {
+            $crumbs[] = ['@type' => 'ListItem', 'position' => $pos++, 'name' => $article->category->name, 'item' => route('category.show', $article->category)];
+        }
+        $crumbs[] = ['@type' => 'ListItem', 'position' => $pos, 'name' => $article->title, 'item' => route('article.show', $article)];
+        $breadcrumbLd = ['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => $crumbs];
+    @endphp
+    {!! json_encode($breadcrumbLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
 @endpush
 
 @section('content')

@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $category->name . ' — ' . \App\Support\SiteSettings::name())
+@section('meta_description', $category->description ?: ('Aktuelle Nachrichten und Artikel aus der Kategorie ' . $category->name . ' – ' . \App\Support\SiteSettings::name() . '.'))
 
 @section('content')
     <header class="mb-6 border-b-2 border-[var(--brand)] pb-3">

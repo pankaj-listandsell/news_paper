@@ -3,6 +3,8 @@
 @section('title', \App\Support\SiteSettings::name() . ' — Aktuelle Nachrichten')
 
 @section('content')
+    <h1 class="sr-only">{{ \App\Support\SiteSettings::name() }} — Aktuelle Nachrichten aus Berlin</h1>
+
     {{-- Hero: featured --}}
     @if ($featured->isNotEmpty())
         @php $lead = $featured->first(); $rest = $featured->slice(1); @endphp

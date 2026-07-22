@@ -36,6 +36,42 @@
         <meta name="google-site-verification" content="{{ $site['google_site_verification'] }}">
     @endif
 
+    {{-- Sitewide structured data: publisher + site search box --}}
+    <script type="application/ld+json">
+    @php
+        $orgLd = [
+            '@context' => 'https://schema.org',
+            '@graph'   => [
+                [
+                    '@type' => 'NewsMediaOrganization',
+                    '@id'   => url('/') . '#organization',
+                    'name'  => $site['site_name'],
+                    'url'   => url('/'),
+                    'logo'  => $siteLogo ?? asset('build/assets/og-default.png'),
+                    'sameAs' => array_values($siteSocial),
+                ],
+                [
+                    '@type'     => 'WebSite',
+                    '@id'       => url('/') . '#website',
+                    'name'      => $site['site_name'],
+                    'url'       => url('/'),
+                    'publisher' => ['@id' => url('/') . '#organization'],
+                    'inLanguage' => 'de-DE',
+                    'potentialAction' => [
+                        '@type'  => 'SearchAction',
+                        'target' => [
+                            '@type'       => 'EntryPoint',
+                            'urlTemplate' => route('search') . '?q={search_term_string}',
+                        ],
+                        'query-input' => 'required name=search_term_string',
+                    ],
+                ],
+            ],
+        ];
+    @endphp
+    {!! json_encode($orgLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
+
     <style>
         :root {
             --brand: {{ $brand['base'] }};

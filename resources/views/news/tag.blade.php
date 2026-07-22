@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', '#' . $tag->name . ' — ' . \App\Support\SiteSettings::name())
+@section('meta_description', 'Alle Artikel und Nachrichten zum Thema ' . $tag->name . ' – ' . \App\Support\SiteSettings::name() . '.')
 
 @section('content')
     <header class="mb-6 border-b-2 border-[var(--brand)] pb-3">
