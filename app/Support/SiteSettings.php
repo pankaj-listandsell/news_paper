@@ -36,6 +36,8 @@ class SiteSettings
         'google_site_verification' => '',
         // Search engine indexing ('1' = allow, '0' = noindex)
         'search_indexing'          => '1',
+        // GDPR cookie consent banner ('1' = on, gates Analytics behind consent)
+        'cookie_banner'            => '1',
         // Show the comment section on articles ('1' = on, '0' = off)
         'comments_enabled'         => '1',
         // Content pages (imprint + privacy are required for German sites)

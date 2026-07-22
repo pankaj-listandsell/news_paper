@@ -82,9 +82,14 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Google Analytics (public site only) --}}
-    @if ($site['google_analytics_id'])
-        @php $gaId = $site['google_analytics_id']; @endphp
+    {{-- Google Analytics — when the cookie banner is ON, it loads only AFTER
+         the visitor consents (see the bottom of the body). When the banner is
+         OFF it loads directly, as before. --}}
+    @php
+        $gaId = $site['google_analytics_id'];
+        $cookieBanner = ($site['cookie_banner'] ?? '1') !== '0';
+    @endphp
+    @if ($gaId && ! $cookieBanner)
         <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($gaId) }}"></script>
         <script>
             window.dataLayer = window.dataLayer || [];
@@ -206,6 +211,9 @@
                     <a href="{{ route('page', 'datenschutz') }}" class="hover:text-white">Datenschutz</a>
                 @endif
                 <a href="{{ route('rss') }}" class="hover:text-white">RSS</a>
+                @if ($cookieBanner)
+                    <button type="button" onclick="openCookieSettings()" class="hover:text-white">Cookie-Einstellungen</button>
+                @endif
             </div>
             &copy; {{ now()->year }} {{ $site['site_name'] }}. {{ $site['copyright_text'] }}
         </div>
@@ -216,6 +224,158 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+
+    {{-- GDPR cookie consent — a centered modal; Analytics loads only on consent --}}
+    @if ($cookieBanner)
+        <div id="cookie-consent" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="cc-title">
+            <div class="absolute inset-0 bg-black/60"></div>
+            <div class="relative flex min-h-full items-center justify-center p-4">
+                <div class="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl sm:p-8">
+                    <button id="cc-close" type="button" aria-label="Schließen"
+                            class="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-2xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700">&times;</button>
+
+                    <h2 id="cc-title" class="pr-6 text-xl font-black text-gray-900">Diese Website verwendet Cookies</h2>
+                    <p class="mt-4 text-sm leading-relaxed text-gray-600">
+                        Durch die Auswahl von „Alle Cookies akzeptieren“ stimmen Sie der Verwendung von Cookies zu,
+                        um Ihnen eine bessere Benutzererfahrung zu bieten und die Website-Nutzung zu analysieren.
+                        Durch Klick auf „Einstellungen anpassen“ können Sie auswählen, welche Cookies erlaubt sind.
+                        Nur die notwendigen Cookies sind für das einwandfreie Funktionieren unserer Website
+                        erforderlich und können nicht abgelehnt werden.
+                    </p>
+
+                    {{-- Category toggles — revealed by "Einstellungen anpassen" --}}
+                    <div id="cc-settings" class="mt-5 hidden space-y-3">
+                        <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                            <span class="text-sm">
+                                <span class="font-semibold text-gray-900">Notwendige Cookies</span>
+                                <span class="block text-xs text-gray-500">Immer aktiv – für den Betrieb der Website erforderlich.</span>
+                            </span>
+                            <input type="checkbox" checked disabled class="h-5 w-5 shrink-0 accent-[var(--brand)]">
+                        </label>
+                        <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                            <span class="text-sm">
+                                <span class="font-semibold text-gray-900">Funktionale Cookies</span>
+                                <span class="block text-xs text-gray-500">Immer aktiv – ermöglichen erweiterte Funktionen wie Videos und eingebettete Inhalte.</span>
+                            </span>
+                            <input id="cc-functional" type="checkbox" checked disabled class="h-5 w-5 shrink-0 accent-[var(--brand)]">
+                        </label>
+                        <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                            <span class="text-sm">
+                                <span class="font-semibold text-gray-900">Analyse-Cookies</span>
+                                <span class="block text-xs text-gray-500">Google Analytics – hilft uns, die Nutzung der Website zu verstehen.</span>
+                            </span>
+                            <input id="cc-analytics" type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--brand)]">
+                        </label>
+                        <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                            <span class="text-sm">
+                                <span class="font-semibold text-gray-900">Marketing-Cookies</span>
+                                <span class="block text-xs text-gray-500">Werden verwendet, um Ihnen relevante Werbung anzuzeigen.</span>
+                            </span>
+                            <input id="cc-marketing" type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--brand)]">
+                        </label>
+                    </div>
+
+                    <div class="mt-6 flex flex-col gap-3">
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            <button id="cc-accept-all" type="button"
+                                    class="flex-1 rounded-md bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Alle Cookies akzeptieren</button>
+                            <button id="cc-necessary" type="button"
+                                    class="flex-1 rounded-md bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Nur notwendige Cookies akzeptieren</button>
+                        </div>
+                        <button id="cc-customize" type="button"
+                                class="rounded-md border border-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-[var(--brand)] hover:bg-[var(--brand-soft)]">Einstellungen anpassen</button>
+                        <button id="cc-save" type="button"
+                                class="hidden rounded-md bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700">Meine Auswahl speichern</button>
+                    </div>
+
+                    <p class="mt-4 text-center text-xs text-gray-400">
+                        <a href="{{ route('page', 'datenschutz') }}" class="underline hover:text-gray-600">Datenschutz</a>
+                        &middot;
+                        <a href="{{ route('page', 'impressum') }}" class="underline hover:text-gray-600">Impressum</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <script>
+            (function () {
+                var KEY = 'cookie_consent';
+                var modal = document.getElementById('cookie-consent');
+                if (!modal) return;
+                var GA_ID = @json($gaId ?: '');
+
+                function loadGA() {
+                    if (!GA_ID || window.__gaLoaded) return;
+                    window.__gaLoaded = true;
+                    var s = document.createElement('script');
+                    s.async = true;
+                    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
+                    document.head.appendChild(s);
+                    window.dataLayer = window.dataLayer || [];
+                    window.gtag = function () { dataLayer.push(arguments); };
+                    gtag('js', new Date());
+                    gtag('config', GA_ID);
+                }
+
+                function open()  { modal.classList.remove('hidden'); document.documentElement.style.overflow = 'hidden'; }
+                function close() { modal.classList.add('hidden');    document.documentElement.style.overflow = ''; }
+
+                function readConsent() {
+                    try {
+                        var raw = localStorage.getItem(KEY);
+                        if (!raw) return null;
+                        if (raw === 'accepted') return { functional: true, analytics: true, marketing: true };
+                        if (raw === 'declined') return { functional: false, analytics: false, marketing: false };
+                        return JSON.parse(raw);
+                    } catch (e) { return null; }
+                }
+
+                function save(consent) {
+                    try { localStorage.setItem(KEY, JSON.stringify(consent)); } catch (e) {}
+                    close();
+                    if (consent.analytics) loadGA();
+                }
+
+                var consent = readConsent();
+                if (consent) {
+                    if (consent.analytics) loadGA();
+                } else {
+                    open();
+                }
+
+                document.getElementById('cc-accept-all').addEventListener('click', function () {
+                    save({ functional: true, analytics: true, marketing: true });
+                });
+                document.getElementById('cc-necessary').addEventListener('click', function () {
+                    // Functional is always on (locked); only Analytics/Marketing are declined.
+                    save({ functional: true, analytics: false, marketing: false });
+                });
+                document.getElementById('cc-close').addEventListener('click', function () {
+                    // Closing without a choice grants no optional consent (GDPR-safe).
+                    save({ functional: true, analytics: false, marketing: false });
+                });
+                document.getElementById('cc-customize').addEventListener('click', function () {
+                    document.getElementById('cc-settings').classList.remove('hidden');
+                    document.getElementById('cc-save').classList.remove('hidden');
+                    this.classList.add('hidden');
+                });
+                document.getElementById('cc-save').addEventListener('click', function () {
+                    save({
+                        functional: true, // locked on
+                        analytics:  document.getElementById('cc-analytics').checked,
+                        marketing:  document.getElementById('cc-marketing').checked,
+                    });
+                });
+
+                window.openCookieSettings = function () {
+                    var c = readConsent() || {};
+                    document.getElementById('cc-functional').checked = true; // always on
+                    document.getElementById('cc-analytics').checked  = !!c.analytics;
+                    document.getElementById('cc-marketing').checked  = !!c.marketing;
+                    open();
+                };
+            })();
+        </script>
+    @endif
 
     @stack('scripts')
 </body>

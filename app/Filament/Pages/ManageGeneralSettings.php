@@ -108,6 +108,7 @@ class ManageGeneralSettings extends Page implements HasForms
         $values['scrape_notify'] = SiteSettings::scrapeNotify();
         $values['search_indexing'] = SiteSettings::get('search_indexing') !== '0';
         $values['comments_enabled'] = SiteSettings::commentsEnabled();
+        $values['cookie_banner'] = SiteSettings::get('cookie_banner') !== '0';
         // SMTP fields (password is never prefilled).
         $values = array_merge($values, SiteSettings::mailSettings());
 
@@ -278,6 +279,10 @@ class ManageGeneralSettings extends Page implements HasForms
                         Forms\Components\Toggle::make('search_indexing')
                             ->label('Allow search engines to index this site')
                             ->helperText('Turn off while the site is in testing — adds a "noindex, nofollow" tag so Google stays away. Turn on before going live.')
+                            ->columnSpanFull(),
+                        Forms\Components\Toggle::make('cookie_banner')
+                            ->label('Show GDPR cookie consent banner')
+                            ->helperText('Required in Germany when Analytics is active — Google Analytics then loads only after the visitor clicks “Akzeptieren”.')
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('comments_enabled')
                             ->label('Show the comment section on articles')
