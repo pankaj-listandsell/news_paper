@@ -32,7 +32,6 @@ class SiteSettings
         'social_instagram' => '',
         'social_youtube'   => '',
         // Tracking / verification
-        'google_analytics_id'      => '',
         'gtm_id'                   => '',
         'google_site_verification' => '',
         // Search engine indexing ('1' = allow, '0' = noindex)

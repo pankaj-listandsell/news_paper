@@ -86,28 +86,16 @@
          the visitor consents (see the bottom of the body). When the banner is
          OFF it loads directly, as before. --}}
     @php
-        $gaId = $site['google_analytics_id'];
         $gtmId = $site['gtm_id'] ?? '';
         $cookieBanner = ($site['cookie_banner'] ?? '1') !== '0';
     @endphp
-    @if (! $cookieBanner)
-        @if ($gtmId)
-            {{-- Google Tag Manager --}}
-            <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer',@json($gtmId));</script>
-        @endif
-        @if ($gaId)
-            <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($gaId) }}"></script>
-            <script>
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', @json($gaId));
-            </script>
-        @endif
+    @if ($gtmId && ! $cookieBanner)
+        {{-- Google Tag Manager --}}
+        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer',@json($gtmId));</script>
     @endif
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased">
@@ -292,7 +280,7 @@
                         <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
                             <span class="text-sm">
                                 <span class="font-semibold text-gray-900">Analyse-Cookies</span>
-                                <span class="block text-xs text-gray-500">Google Analytics – hilft uns, die Nutzung der Website zu verstehen.</span>
+                                <span class="block text-xs text-gray-500">Google Tag Manager / Analytics – hilft uns, die Nutzung der Website zu verstehen.</span>
                             </span>
                             <input id="cc-analytics" type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--brand)]">
                         </label>
@@ -331,21 +319,7 @@
                 var KEY = 'cookie_consent';
                 var modal = document.getElementById('cookie-consent');
                 if (!modal) return;
-                var GA_ID  = @json($gaId ?: '');
                 var GTM_ID = @json($gtmId ?: '');
-
-                function loadGA() {
-                    if (!GA_ID || window.__gaLoaded) return;
-                    window.__gaLoaded = true;
-                    var s = document.createElement('script');
-                    s.async = true;
-                    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
-                    document.head.appendChild(s);
-                    window.dataLayer = window.dataLayer || [];
-                    window.gtag = function () { dataLayer.push(arguments); };
-                    gtag('js', new Date());
-                    gtag('config', GA_ID);
-                }
 
                 function loadGTM() {
                     if (!GTM_ID || window.__gtmLoaded) return;
@@ -358,8 +332,6 @@
                     j.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(GTM_ID);
                     f.parentNode.insertBefore(j, f);
                 }
-
-                function loadTracking() { loadGA(); loadGTM(); }
 
                 function open()  { modal.classList.remove('hidden'); document.documentElement.style.overflow = 'hidden'; }
                 function close() { modal.classList.add('hidden');    document.documentElement.style.overflow = ''; }
@@ -377,12 +349,12 @@
                 function save(consent) {
                     try { localStorage.setItem(KEY, JSON.stringify(consent)); } catch (e) {}
                     close();
-                    if (consent.analytics) loadTracking();
+                    if (consent.analytics) loadGTM();
                 }
 
                 var consent = readConsent();
                 if (consent) {
-                    if (consent.analytics) loadTracking();
+                    if (consent.analytics) loadGTM();
                 } else {
                     open();
                 }

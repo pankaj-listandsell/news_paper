@@ -334,12 +334,6 @@ class ManageGeneralSettings extends Page implements HasForms
                 Forms\Components\Section::make('Tracking & verification')
                     ->description('Scripts are added to the public website only — never to this admin panel.')
                     ->schema([
-                        Forms\Components\TextInput::make('google_analytics_id')
-                            ->label('Google Analytics ID')
-                            ->placeholder('G-XXXXXXXXXX')
-                            ->maxLength(40)
-                            ->rule('regex:/^$|^(G-[A-Z0-9]+|UA-[0-9]+-[0-9]+|GTM-[A-Z0-9]+)$/i')
-                            ->helperText('GA4 measurement ID from analytics.google.com. Leave empty to disable tracking.'),
                         Forms\Components\TextInput::make('gtm_id')
                             ->label('Google Tag Manager ID')
                             ->placeholder('GTM-XXXXXXX')
@@ -356,7 +350,7 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('cookie_banner')
                             ->label('Show GDPR cookie consent banner')
-                            ->helperText('Required in Germany when Analytics is active — Google Analytics then loads only after the visitor clicks “Akzeptieren”.')
+                            ->helperText('Required in Germany when tracking is active — Google Tag Manager then loads only after the visitor accepts analytics cookies.')
                             ->columnSpanFull(),
                     ])->columns(2),
 
