@@ -340,6 +340,12 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->maxLength(40)
                             ->rule('regex:/^$|^(G-[A-Z0-9]+|UA-[0-9]+-[0-9]+|GTM-[A-Z0-9]+)$/i')
                             ->helperText('GA4 measurement ID from analytics.google.com. Leave empty to disable tracking.'),
+                        Forms\Components\TextInput::make('gtm_id')
+                            ->label('Google Tag Manager ID')
+                            ->placeholder('GTM-XXXXXXX')
+                            ->maxLength(40)
+                            ->rule('regex:/^$|^GTM-[A-Z0-9]+$/i')
+                            ->helperText('Container ID from tagmanager.google.com. Loads only after cookie consent.'),
                         Forms\Components\TextInput::make('google_site_verification')
                             ->label('Google Search Console code')
                             ->maxLength(255)

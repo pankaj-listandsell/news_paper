@@ -87,19 +87,37 @@
          OFF it loads directly, as before. --}}
     @php
         $gaId = $site['google_analytics_id'];
+        $gtmId = $site['gtm_id'] ?? '';
         $cookieBanner = ($site['cookie_banner'] ?? '1') !== '0';
     @endphp
-    @if ($gaId && ! $cookieBanner)
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($gaId) }}"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', @json($gaId));
-        </script>
+    @if (! $cookieBanner)
+        @if ($gtmId)
+            {{-- Google Tag Manager --}}
+            <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer',@json($gtmId));</script>
+        @endif
+        @if ($gaId)
+            <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($gaId) }}"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', @json($gaId));
+            </script>
+        @endif
     @endif
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased">
+
+    @if ($gtmId && ! $cookieBanner)
+        {{-- Google Tag Manager (noscript). Only rendered when consent is not
+             required — with JS off there is no way to ask for consent first. --}}
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ urlencode($gtmId) }}"
+                          height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    @endif
 
     {{-- Masthead --}}
     <header class="border-b bg-white">
@@ -313,7 +331,8 @@
                 var KEY = 'cookie_consent';
                 var modal = document.getElementById('cookie-consent');
                 if (!modal) return;
-                var GA_ID = @json($gaId ?: '');
+                var GA_ID  = @json($gaId ?: '');
+                var GTM_ID = @json($gtmId ?: '');
 
                 function loadGA() {
                     if (!GA_ID || window.__gaLoaded) return;
@@ -327,6 +346,20 @@
                     gtag('js', new Date());
                     gtag('config', GA_ID);
                 }
+
+                function loadGTM() {
+                    if (!GTM_ID || window.__gtmLoaded) return;
+                    window.__gtmLoaded = true;
+                    window.dataLayer = window.dataLayer || [];
+                    window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+                    var f = document.getElementsByTagName('script')[0];
+                    var j = document.createElement('script');
+                    j.async = true;
+                    j.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(GTM_ID);
+                    f.parentNode.insertBefore(j, f);
+                }
+
+                function loadTracking() { loadGA(); loadGTM(); }
 
                 function open()  { modal.classList.remove('hidden'); document.documentElement.style.overflow = 'hidden'; }
                 function close() { modal.classList.add('hidden');    document.documentElement.style.overflow = ''; }
@@ -344,12 +377,12 @@
                 function save(consent) {
                     try { localStorage.setItem(KEY, JSON.stringify(consent)); } catch (e) {}
                     close();
-                    if (consent.analytics) loadGA();
+                    if (consent.analytics) loadTracking();
                 }
 
                 var consent = readConsent();
                 if (consent) {
-                    if (consent.analytics) loadGA();
+                    if (consent.analytics) loadTracking();
                 } else {
                     open();
                 }
