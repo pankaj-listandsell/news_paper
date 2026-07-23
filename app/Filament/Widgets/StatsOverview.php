@@ -5,7 +5,6 @@ namespace App\Filament\Widgets;
 use App\Models\Article;
 use App\Models\Comment;
 use App\Models\NewsSource;
-use App\Models\Subscriber;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -20,7 +19,6 @@ class StatsOverview extends BaseWidget
         $views     = (int) Article::sum('views');
         $pending   = Comment::where('is_approved', false)->count();
         $sources   = NewsSource::where('is_active', true)->count();
-        $subs      = Subscriber::where('is_active', true)->count();
 
         return [
             Stat::make('Published articles', number_format($published))
@@ -40,7 +38,7 @@ class StatsOverview extends BaseWidget
                 ->color($pending > 0 ? 'warning' : 'gray'),
 
             Stat::make('Active sources', number_format($sources))
-                ->description($subs . ' newsletter subscribers')
+                ->description('Feeds being scraped')
                 ->descriptionIcon('heroicon-m-rss')
                 ->color('primary'),
         ];

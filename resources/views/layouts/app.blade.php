@@ -203,18 +203,14 @@
                 </ul>
             </div>
             <div>
-                <h4 class="font-semibold text-white">Newsletter</h4>
-                <p class="mt-2 text-sm text-gray-400">{{ $site['newsletter_text'] }}</p>
-                @if (session('subscribe_status'))
-                    <p class="mt-2 text-sm text-green-400">{{ session('subscribe_status') }}</p>
-                @endif
-                <form action="{{ route('subscribe') }}" method="POST" class="mt-3 flex">
-                    @csrf
-                    <input type="email" name="email" required placeholder="E-Mail-Adresse"
-                           class="w-full rounded-l-md border-0 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none">
-                    <button class="shrink-0 rounded-r-md bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Anmelden</button>
-                </form>
-                @error('email')<p class="mt-1 text-sm text-red-400">{{ $message }}</p>@enderror
+                <h4 class="font-semibold text-white">Service</h4>
+                <ul class="mt-2 space-y-1 text-sm">
+                    <li><a href="{{ route('contact') }}" class="hover:text-white">Kontakt</a></li>
+                    <li><a href="{{ route('rss') }}" class="hover:text-white">RSS-Feed</a></li>
+                    @if (strip_tags($site['imprint_content']) !== '')
+                        <li><a href="{{ route('page', 'impressum') }}" class="hover:text-white">Impressum</a></li>
+                    @endif
+                </ul>
             </div>
         </div>
         <div class="border-t border-gray-800 py-4 text-center text-xs text-gray-500">

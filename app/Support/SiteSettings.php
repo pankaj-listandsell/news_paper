@@ -24,7 +24,6 @@ class SiteSettings
         'site_logo'        => '',
         'site_favicon'     => '',
         'brand_color'      => '#dc2626',
-        'newsletter_text'  => 'Abonnieren Sie, um aktuelle Nachrichten per E-Mail zu erhalten.',
         'copyright_text'   => 'Alle Rechte vorbehalten.',
         'contact_email'    => '',
         'social_facebook'  => '',

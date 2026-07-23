@@ -148,10 +148,11 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->helperText('Shown in the masthead. Leave empty to show the website name as text.'),
                         Forms\Components\FileUpload::make('site_favicon')
                             ->label('Favicon')
-                            ->image()
+                            // No ->image() here: Laravel's "image" rule rejects .ico files.
                             ->disk('public')
                             ->directory('site')
                             ->acceptedFileTypes(['image/png', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/svg+xml'])
+                            ->maxSize(512)
                             ->helperText('Browser tab icon. Square PNG, ICO or SVG — 32×32 or larger.'),
                         Forms\Components\ColorPicker::make('brand_color')
                             ->label('Brand colour')
@@ -168,11 +169,6 @@ class ManageGeneralSettings extends Page implements HasForms
                     ->schema([
                         Forms\Components\Textarea::make('site_tagline')
                             ->label('About text')
-                            ->rows(2)
-                            ->maxLength(255)
-                            ->columnSpanFull(),
-                        Forms\Components\Textarea::make('newsletter_text')
-                            ->label('Newsletter text')
                             ->rows(2)
                             ->maxLength(255)
                             ->columnSpanFull(),

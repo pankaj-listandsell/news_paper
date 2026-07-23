@@ -1,7 +1,16 @@
 <x-mail::message>
 # News scrape finished
 
-**{{ $totalCreated }}** new article(s), **{{ $totalUpdated }}** updated@if($failures > 0), **{{ $failures }}** source(s) failed@endif.
+@php
+    // Built in PHP: a Blade directive glued to a word (…updated@if) is not compiled.
+    $summary = "**{$totalCreated}** new article(s), **{$totalUpdated}** updated";
+
+    if ($failures > 0) {
+        $summary .= ", **{$failures}** source(s) failed";
+    }
+@endphp
+
+{{ $summary }}.
 
 <x-mail::table>
 | Source | New | Updated | Status |
