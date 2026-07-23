@@ -1,4 +1,22 @@
 <style>
+    /* Hand cursor on everything clickable (Tailwind v4 drops it on buttons). */
+    button:not(:disabled),
+    [role='button']:not(:disabled),
+    summary,
+    .fi-btn:not(:disabled),
+    .fi-icon-btn:not(:disabled),
+    .fi-ta-header-cell-sort-btn,
+    label.fi-checkbox-input,
+    .fi-select-input,
+    .choices__item {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    .fi-btn:disabled {
+        cursor: not-allowed;
+    }
+
     /* ===== News Paper — dark sidebar theme ===== */
     .fi-sidebar,
     .fi-sidebar-header,

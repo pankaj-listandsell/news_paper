@@ -10,3 +10,25 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/*
+ * Tailwind v4 changed the button default cursor from `pointer` to `default`.
+ * Put the hand cursor back on anything clickable.
+ */
+@layer base {
+    button:not(:disabled),
+    [role='button']:not(:disabled),
+    summary {
+        cursor: pointer;
+    }
+
+    button:disabled {
+        cursor: not-allowed;
+    }
+
+    /* Text selection picks up the brand colour set in the layout. */
+    ::selection {
+        background-color: var(--brand, #dc2626);
+        color: #fff;
+    }
+}

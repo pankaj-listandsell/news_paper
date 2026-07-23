@@ -173,64 +173,84 @@
     </main>
 
     {{-- Footer --}}
-    <footer class="mt-12 bg-gray-900 text-gray-300">
-        <div class="mx-auto max-w-7xl px-4 py-10 grid gap-8 md:grid-cols-3">
-            <div>
-                <h3 class="text-xl font-black text-white">{{ $site['site_name'] }}</h3>
-                <p class="mt-2 text-sm text-gray-400">{{ $site['site_tagline'] }}</p>
+    <footer class="mt-16 border-t-4 border-[var(--brand)] bg-gray-900 text-gray-300">
+        <div class="mx-auto max-w-7xl px-4 py-12">
+            <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
 
-                @if ($site['contact_email'])
-                    <p class="mt-3 text-sm">
-                        <a href="mailto:{{ $site['contact_email'] }}" class="text-gray-400 hover:text-white">{{ $site['contact_email'] }}</a>
-                    </p>
-                @endif
+                {{-- Brand --}}
+                <div class="lg:col-span-2">
+                    <a href="{{ route('home') }}" class="inline-block">
+                        @if ($siteLogo)
+                            <img src="{{ $siteLogo }}" alt="{{ $site['site_name'] }}"
+                                 class="h-11 w-auto rounded bg-white p-1.5">
+                        @else
+                            <span class="text-2xl font-black tracking-tight text-white">{{ $site['site_name'] }}</span>
+                        @endif
+                    </a>
 
-                @if (count($siteSocial))
-                    <div class="mt-3 flex flex-wrap gap-3 text-sm">
-                        @foreach ($siteSocial as $label => $url)
-                            <a href="{{ $url }}" target="_blank" rel="noopener"
-                               class="text-gray-400 hover:text-white">{{ $label }}</a>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-            <div>
-                <h4 class="font-semibold text-white">Kategorien</h4>
-                <ul class="mt-2 space-y-1 text-sm">
-                    @foreach ($navCategories->take(6) as $cat)
-                        <li><a href="{{ route('category.show', $cat) }}" class="hover:text-white">{{ $cat->name }}</a></li>
-                    @endforeach
-                </ul>
-            </div>
-            <div>
-                <h4 class="font-semibold text-white">Service</h4>
-                <ul class="mt-2 space-y-1 text-sm">
-                    <li><a href="{{ route('contact') }}" class="hover:text-white">Kontakt</a></li>
-                    <li><a href="{{ route('rss') }}" class="hover:text-white">RSS-Feed</a></li>
-                    @if (strip_tags($site['imprint_content']) !== '')
-                        <li><a href="{{ route('page', 'impressum') }}" class="hover:text-white">Impressum</a></li>
+                    @if ($site['site_tagline'])
+                        <p class="mt-5 max-w-md text-sm leading-relaxed text-gray-400">{{ $site['site_tagline'] }}</p>
                     @endif
-                </ul>
+
+                    @if ($site['contact_email'])
+                        <a href="mailto:{{ $site['contact_email'] }}"
+                           class="mt-4 inline-flex items-center gap-2 text-sm text-gray-400 transition hover:text-white">
+                            <span aria-hidden="true">✉</span>{{ $site['contact_email'] }}
+                        </a>
+                    @endif
+
+                    @if (count($siteSocial))
+                        <div class="mt-6 flex flex-wrap gap-2">
+                            @foreach ($siteSocial as $label => $url)
+                                <a href="{{ $url }}" target="_blank" rel="noopener"
+                                   class="rounded-full border border-gray-700 px-3.5 py-1.5 text-xs font-semibold text-gray-400 transition hover:border-[var(--brand)] hover:bg-[var(--brand)] hover:text-white">{{ $label }}</a>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Categories --}}
+                <div>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-white">Kategorien</h4>
+                    <ul class="mt-5 space-y-2.5 text-sm">
+                        @foreach ($navCategories->take(6) as $cat)
+                            <li>
+                                <a href="{{ route('category.show', $cat) }}"
+                                   class="text-gray-400 transition hover:text-white">{{ $cat->name }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+
+                {{-- Service & legal --}}
+                <div>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-white">Service</h4>
+                    <ul class="mt-5 space-y-2.5 text-sm">
+                        @if (strip_tags($site['about_content']) !== '')
+                            <li><a href="{{ route('page', 'ueber-uns') }}" class="text-gray-400 transition hover:text-white">Über uns</a></li>
+                        @endif
+                        <li><a href="{{ route('contact') }}" class="text-gray-400 transition hover:text-white">Kontakt</a></li>
+                        @if (strip_tags($site['imprint_content']) !== '')
+                            <li><a href="{{ route('page', 'impressum') }}" class="text-gray-400 transition hover:text-white">Impressum</a></li>
+                        @endif
+                        @if (strip_tags($site['privacy_content']) !== '')
+                            <li><a href="{{ route('page', 'datenschutz') }}" class="text-gray-400 transition hover:text-white">Datenschutz</a></li>
+                        @endif
+                        <li><a href="{{ route('rss') }}" class="text-gray-400 transition hover:text-white">RSS-Feed</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
-        <div class="border-t border-gray-800 py-4 text-center text-xs text-gray-500">
-            <div class="mb-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
-                @if (strip_tags($site['about_content']) !== '')
-                    <a href="{{ route('page', 'ueber-uns') }}" class="hover:text-white">Über uns</a>
-                @endif
-                @if (strip_tags($site['imprint_content']) !== '')
-                    <a href="{{ route('page', 'impressum') }}" class="hover:text-white">Impressum</a>
-                @endif
-                @if (strip_tags($site['privacy_content']) !== '')
-                    <a href="{{ route('page', 'datenschutz') }}" class="hover:text-white">Datenschutz</a>
-                @endif
-                <a href="{{ route('contact') }}" class="hover:text-white">Kontakt</a>
-                <a href="{{ route('rss') }}" class="hover:text-white">RSS</a>
+
+        {{-- Bottom bar --}}
+        <div class="border-t border-gray-800">
+            <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-5 text-xs text-gray-500 sm:flex-row">
+                <p>&copy; {{ now()->year }} {{ $site['site_name'] }}. {{ $site['copyright_text'] }}</p>
                 @if ($cookieBanner)
-                    <button type="button" onclick="openCookieSettings()" class="hover:text-white">Cookie-Einstellungen</button>
+                    <button type="button" onclick="openCookieSettings()"
+                            class="transition hover:text-white">Cookie-Einstellungen</button>
                 @endif
             </div>
-            &copy; {{ now()->year }} {{ $site['site_name'] }}. {{ $site['copyright_text'] }}
         </div>
     </footer>
 
@@ -242,72 +262,75 @@
 
     {{-- GDPR cookie consent — a centered modal; Analytics loads only on consent --}}
     @if ($cookieBanner)
-        <div id="cookie-consent" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="cc-title">
-            <div class="absolute inset-0 bg-black/60"></div>
-            <div class="relative flex min-h-full items-center justify-center p-4">
-                <div class="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl sm:p-8">
-                    <button id="cc-close" type="button" aria-label="Schließen"
-                            class="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-2xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700">&times;</button>
+        {{-- Bottom bar. No overlay and no scroll lock, so the whole site stays
+             clickable and scrollable while the notice is showing. --}}
+        <div id="cookie-consent" class="fixed inset-x-0 bottom-0 z-50 hidden" role="region" aria-label="Cookie-Hinweis">
+            <div class="border-t border-gray-200 bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.10)]">
+                <div class="mx-auto max-h-[80vh] max-w-7xl overflow-y-auto px-4 py-4">
 
-                    <h2 id="cc-title" class="pr-6 text-xl font-black text-gray-900">Diese Website verwendet Cookies</h2>
-                    <p class="mt-4 text-sm leading-relaxed text-gray-600">
-                        Durch die Auswahl von „Alle Cookies akzeptieren“ stimmen Sie der Verwendung von Cookies zu,
-                        um Ihnen eine bessere Benutzererfahrung zu bieten und die Website-Nutzung zu analysieren.
-                        Durch Klick auf „Einstellungen anpassen“ können Sie auswählen, welche Cookies erlaubt sind.
-                        Nur die notwendigen Cookies sind für das einwandfreie Funktionieren unserer Website
-                        erforderlich und können nicht abgelehnt werden.
-                    </p>
-
-                    {{-- Category toggles — revealed by "Einstellungen anpassen" --}}
-                    <div id="cc-settings" class="mt-5 hidden space-y-3">
-                        <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
-                            <span class="text-sm">
-                                <span class="font-semibold text-gray-900">Notwendige Cookies</span>
-                                <span class="block text-xs text-gray-500">Immer aktiv – für den Betrieb der Website erforderlich.</span>
-                            </span>
-                            <input type="checkbox" checked disabled class="h-5 w-5 shrink-0 accent-[var(--brand)]">
-                        </label>
-                        <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
-                            <span class="text-sm">
-                                <span class="font-semibold text-gray-900">Funktionale Cookies</span>
-                                <span class="block text-xs text-gray-500">Immer aktiv – ermöglichen erweiterte Funktionen wie Videos und eingebettete Inhalte.</span>
-                            </span>
-                            <input id="cc-functional" type="checkbox" checked disabled class="h-5 w-5 shrink-0 accent-[var(--brand)]">
-                        </label>
-                        <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
-                            <span class="text-sm">
-                                <span class="font-semibold text-gray-900">Analyse-Cookies</span>
-                                <span class="block text-xs text-gray-500">Google Tag Manager / Analytics – hilft uns, die Nutzung der Website zu verstehen.</span>
-                            </span>
-                            <input id="cc-analytics" type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--brand)]">
-                        </label>
-                        <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
-                            <span class="text-sm">
-                                <span class="font-semibold text-gray-900">Marketing-Cookies</span>
-                                <span class="block text-xs text-gray-500">Werden verwendet, um Ihnen relevante Werbung anzuzeigen.</span>
-                            </span>
-                            <input id="cc-marketing" type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--brand)]">
-                        </label>
-                    </div>
-
-                    <div class="mt-6 flex flex-col gap-3">
-                        <div class="flex flex-col gap-3 sm:flex-row">
-                            <button id="cc-accept-all" type="button"
-                                    class="flex-1 rounded-md bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Alle Cookies akzeptieren</button>
+                    {{-- Compact notice --}}
+                    <div id="cc-bar" class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <p class="text-sm leading-relaxed text-gray-600">
+                            Wir verwenden Cookies, um Ihnen die bestmögliche Erfahrung auf unserer Website zu bieten.
+                            Sie können mehr darüber erfahren, welche Cookies wir verwenden, oder sie in den
+                            <button type="button" id="cc-customize"
+                                    class="font-semibold text-[var(--brand)] underline hover:no-underline">Einstellungen</button>
+                            ausschalten.
+                        </p>
+                        <div class="flex shrink-0 flex-wrap gap-3">
                             <button id="cc-necessary" type="button"
-                                    class="flex-1 rounded-md bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Nur notwendige Cookies akzeptieren</button>
+                                    class="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Nur notwendige</button>
+                            <button id="cc-accept-all" type="button"
+                                    class="rounded-md bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[var(--brand-dark)]">Alle Cookies akzeptieren</button>
                         </div>
-                        <button id="cc-customize" type="button"
-                                class="rounded-md border border-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-[var(--brand)] hover:bg-[var(--brand-soft)]">Einstellungen anpassen</button>
-                        <button id="cc-save" type="button"
-                                class="hidden rounded-md bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700">Meine Auswahl speichern</button>
                     </div>
 
-                    <p class="mt-4 text-center text-xs text-gray-400">
-                        <a href="{{ route('page', 'datenschutz') }}" class="underline hover:text-gray-600">Datenschutz</a>
-                        &middot;
-                        <a href="{{ route('page', 'impressum') }}" class="underline hover:text-gray-600">Impressum</a>
-                    </p>
+                    {{-- Settings — opened by "Einstellungen" --}}
+                    <div id="cc-settings" class="hidden">
+                        <div class="flex items-start justify-between gap-4">
+                            <h2 class="text-base font-black text-gray-900">Cookie-Einstellungen</h2>
+                            <button id="cc-back" type="button" aria-label="Schließen"
+                                    class="-mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-2xl leading-none text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">&times;</button>
+                        </div>
+
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                            <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                                <span class="text-sm">
+                                    <span class="font-semibold text-gray-900">Notwendige Cookies</span>
+                                    <span class="block text-xs text-gray-500">Immer aktiv – für den Betrieb der Website erforderlich.</span>
+                                </span>
+                                <input type="checkbox" checked disabled class="h-5 w-5 shrink-0 accent-[var(--brand)]">
+                            </label>
+                            <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                                <span class="text-sm">
+                                    <span class="font-semibold text-gray-900">Funktionale Cookies</span>
+                                    <span class="block text-xs text-gray-500">Immer aktiv – ermöglichen erweiterte Funktionen wie Videos und eingebettete Inhalte.</span>
+                                </span>
+                                <input id="cc-functional" type="checkbox" checked disabled class="h-5 w-5 shrink-0 accent-[var(--brand)]">
+                            </label>
+                            <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                                <span class="text-sm">
+                                    <span class="font-semibold text-gray-900">Analyse-Cookies</span>
+                                    <span class="block text-xs text-gray-500">Google Tag Manager / Analytics – hilft uns, die Nutzung der Website zu verstehen.</span>
+                                </span>
+                                <input id="cc-analytics" type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--brand)]">
+                            </label>
+                            <label class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                                <span class="text-sm">
+                                    <span class="font-semibold text-gray-900">Marketing-Cookies</span>
+                                    <span class="block text-xs text-gray-500">Werden verwendet, um Ihnen relevante Werbung anzuzeigen.</span>
+                                </span>
+                                <input id="cc-marketing" type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--brand)]">
+                            </label>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap items-center gap-3">
+                            <button id="cc-save" type="button"
+                                    class="rounded-md bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[var(--brand-dark)]">Meine Auswahl speichern</button>
+                            <a href="{{ route('page', 'datenschutz') }}" class="text-xs text-gray-400 underline hover:text-gray-600">Datenschutz</a>
+                            <a href="{{ route('page', 'impressum') }}" class="text-xs text-gray-400 underline hover:text-gray-600">Impressum</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -330,8 +353,17 @@
                     f.parentNode.insertBefore(j, f);
                 }
 
-                function open()  { modal.classList.remove('hidden'); document.documentElement.style.overflow = 'hidden'; }
-                function close() { modal.classList.add('hidden');    document.documentElement.style.overflow = ''; }
+                var bar      = document.getElementById('cc-bar');
+                var settings = document.getElementById('cc-settings');
+
+                // Nothing is locked — the page stays scrollable and clickable.
+                function open()  { modal.classList.remove('hidden'); }
+                function close() { modal.classList.add('hidden'); }
+
+                function showSettings(on) {
+                    settings.classList.toggle('hidden', ! on);
+                    bar.classList.toggle('hidden', on);
+                }
 
                 function readConsent() {
                     try {
@@ -363,14 +395,11 @@
                     // Functional is always on (locked); only Analytics/Marketing are declined.
                     save({ functional: true, analytics: false, marketing: false });
                 });
-                document.getElementById('cc-close').addEventListener('click', function () {
-                    // Closing without a choice grants no optional consent (GDPR-safe).
-                    save({ functional: true, analytics: false, marketing: false });
-                });
                 document.getElementById('cc-customize').addEventListener('click', function () {
-                    document.getElementById('cc-settings').classList.remove('hidden');
-                    document.getElementById('cc-save').classList.remove('hidden');
-                    this.classList.add('hidden');
+                    showSettings(true);
+                });
+                document.getElementById('cc-back').addEventListener('click', function () {
+                    showSettings(false);
                 });
                 document.getElementById('cc-save').addEventListener('click', function () {
                     save({
@@ -380,11 +409,13 @@
                     });
                 });
 
+                // Footer link — reopen straight on the settings view.
                 window.openCookieSettings = function () {
                     var c = readConsent() || {};
                     document.getElementById('cc-functional').checked = true; // always on
                     document.getElementById('cc-analytics').checked  = !!c.analytics;
                     document.getElementById('cc-marketing').checked  = !!c.marketing;
+                    showSettings(true);
                     open();
                 };
             })();
