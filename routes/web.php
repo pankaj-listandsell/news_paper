@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [NewsController::class, 'home'])->name('home');
 
-// SEO / syndication
+// SEO / syndication — these paths are standards, so they stay English.
 Route::get('/sitemap.xml', [FeedController::class, 'sitemap'])->name('sitemap');
 Route::get('/feed', [FeedController::class, 'rss'])->name('rss');
 Route::get('/robots.txt', [FeedController::class, 'robots'])->name('robots');
@@ -18,18 +18,32 @@ Route::get('/{page}', [NewsController::class, 'page'])
     ->whereIn('page', array_keys(NewsController::PAGES))
     ->name('page');
 
-Route::get('/search', [NewsController::class, 'search'])->name('search');
+/*
+ * Public URLs are German — the route names stay the same, so every
+ * route() call in the views keeps working.
+ */
+Route::get('/suche', [NewsController::class, 'search'])->name('search');
 
-Route::get('/category/{category:slug}', [NewsController::class, 'category'])->name('category.show');
-Route::get('/tag/{tag:slug}', [NewsController::class, 'tag'])->name('tag.show');
-Route::get('/author/{user}', [NewsController::class, 'author'])->name('author.show');
+Route::get('/kategorie/{category:slug}', [NewsController::class, 'category'])->name('category.show');
+Route::get('/thema/{tag:slug}', [NewsController::class, 'tag'])->name('tag.show');
+Route::get('/autor/{user}', [NewsController::class, 'author'])->name('author.show');
 
-Route::get('/news/{article:slug}', [NewsController::class, 'show'])->name('article.show');
+Route::get('/nachrichten/{article:slug}', [NewsController::class, 'show'])->name('article.show');
 // Rate limited: a person posts a handful of comments an hour, a bot posts hundreds.
-Route::post('/news/{article:slug}/comments', [CommentController::class, 'store'])
+Route::post('/nachrichten/{article:slug}/kommentare', [CommentController::class, 'store'])
     ->middleware('throttle:5,60')
     ->name('comments.store');
 
-Route::post('/subscribe', [SubscriberController::class, 'store'])
+Route::post('/newsletter', [SubscriberController::class, 'store'])
     ->middleware('throttle:5,60')
     ->name('subscribe');
+
+/*
+ * Permanent redirects from the old English URLs, so existing links and
+ * anything already indexed keeps working.
+ */
+Route::permanentRedirect('/search', '/suche');
+Route::get('/category/{slug}', fn (string $slug) => redirect('/kategorie/' . $slug, 301));
+Route::get('/tag/{slug}', fn (string $slug) => redirect('/thema/' . $slug, 301));
+Route::get('/author/{user}', fn (string $user) => redirect('/autor/' . $user, 301));
+Route::get('/news/{slug}', fn (string $slug) => redirect('/nachrichten/' . $slug, 301));

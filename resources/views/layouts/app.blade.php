@@ -128,10 +128,22 @@
 
     {{-- Category nav — scrolls sideways on mobile, sticks to the top on scroll --}}
     <nav class="sticky top-0 z-30 border-b bg-white shadow-sm">
-        <div class="no-scrollbar mx-auto flex max-w-7xl items-center gap-x-6 overflow-x-auto whitespace-nowrap px-4 py-3 text-sm font-semibold">
-            <a href="{{ route('home') }}" class="shrink-0 text-[var(--brand)] hover:text-[var(--brand-dark)]">Startseite</a>
+        @php $currentCategory = request()->route('category'); @endphp
+        <div class="no-scrollbar mx-auto flex max-w-7xl items-center gap-x-6 overflow-x-auto whitespace-nowrap px-4 text-sm font-semibold">
+            <a href="{{ route('home') }}"
+               @class([
+                   'shrink-0 border-b-2 py-3',
+                   'border-[var(--brand)] text-[var(--brand)]' => request()->routeIs('home'),
+                   'border-transparent text-gray-700 hover:text-[var(--brand)]' => ! request()->routeIs('home'),
+               ])>Startseite</a>
             @foreach ($navCategories as $cat)
-                <a href="{{ route('category.show', $cat) }}" class="shrink-0 text-gray-700 hover:text-[var(--brand)]">{{ $cat->name }}</a>
+                @php $isActive = request()->routeIs('category.show') && $currentCategory?->id === $cat->id; @endphp
+                <a href="{{ route('category.show', $cat) }}"
+                   @class([
+                       'shrink-0 border-b-2 py-3',
+                       'border-[var(--brand)] text-[var(--brand)]' => $isActive,
+                       'border-transparent text-gray-700 hover:text-[var(--brand)]' => ! $isActive,
+                   ])>{{ $cat->name }}</a>
             @endforeach
         </div>
     </nav>
