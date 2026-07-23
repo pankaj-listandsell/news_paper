@@ -354,6 +354,23 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->columnSpanFull(),
                     ])->columns(2),
 
+                Forms\Components\Section::make('Spam protection (reCAPTCHA)')
+                    ->description('Google reCAPTCHA v2 on the contact and comment forms. Get the keys at google.com/recaptcha — leave empty to turn it off.')
+                    ->schema([
+                        Forms\Components\TextInput::make('recaptcha_site_key')
+                            ->label('Site key')
+                            ->maxLength(255)
+                            ->helperText('Public key — rendered in the form.'),
+                        Forms\Components\TextInput::make('recaptcha_secret_key')
+                            ->label('Secret key')
+                            ->password()
+                            ->revealable()
+                            ->autocomplete('new-password')
+                            ->placeholder('Leave blank to keep the current key')
+                            ->maxLength(255)
+                            ->helperText('Stored encrypted. Both keys are needed before the captcha appears.'),
+                    ])->columns(2),
+
                     ]), // end SEO & Privacy tab
 
                 Forms\Components\Tabs\Tab::make('Social')
@@ -379,7 +396,7 @@ class ManageGeneralSettings extends Page implements HasForms
     public function save(): void
     {
         foreach ($this->form->getState() as $key => $value) {
-            if ($key === 'mail_password') {
+            if (in_array($key, ['mail_password', 'recaptcha_secret_key'], true)) {
                 // Blank means "keep current". Otherwise store encrypted.
                 if (filled($value)) {
                     Setting::set($key, Crypt::encryptString($value));

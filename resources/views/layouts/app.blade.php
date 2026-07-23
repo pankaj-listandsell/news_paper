@@ -228,6 +228,7 @@
                 @if (strip_tags($site['privacy_content']) !== '')
                     <a href="{{ route('page', 'datenschutz') }}" class="hover:text-white">Datenschutz</a>
                 @endif
+                <a href="{{ route('contact') }}" class="hover:text-white">Kontakt</a>
                 <a href="{{ route('rss') }}" class="hover:text-white">RSS</a>
                 @if ($cookieBanner)
                     <button type="button" onclick="openCookieSettings()" class="hover:text-white">Cookie-Einstellungen</button>

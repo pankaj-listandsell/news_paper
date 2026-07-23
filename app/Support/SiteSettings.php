@@ -33,6 +33,9 @@ class SiteSettings
         'social_youtube'   => '',
         // Tracking / verification
         'gtm_id'                   => '',
+        // reCAPTCHA — the site key is public; the secret is stored encrypted
+        // and deliberately kept out of DEFAULTS so it never reaches a view.
+        'recaptcha_site_key'       => '',
         'google_site_verification' => '',
         // Search engine indexing ('1' = allow, '0' = noindex)
         'search_indexing'          => '1',
@@ -77,6 +80,44 @@ class SiteSettings
     public static function scrapeNotify(): bool
     {
         return self::get('scrape_notify') === '1';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | reCAPTCHA
+    |--------------------------------------------------------------------------
+    */
+
+    public static function recaptchaSiteKey(): string
+    {
+        return self::get('recaptcha_site_key');
+    }
+
+    /**
+     * The stored secret, decrypted. Falls back to the raw value for any
+     * legacy plaintext entry.
+     */
+    public static function recaptchaSecret(): string
+    {
+        $stored = self::get('recaptcha_secret_key');
+
+        if ($stored === '') {
+            return '';
+        }
+
+        try {
+            return Crypt::decryptString($stored);
+        } catch (\Throwable) {
+            return $stored;
+        }
+    }
+
+    /**
+     * Both keys present — only then are the forms protected.
+     */
+    public static function recaptchaEnabled(): bool
+    {
+        return self::recaptchaSiteKey() !== '' && self::recaptchaSecret() !== '';
     }
 
     /**

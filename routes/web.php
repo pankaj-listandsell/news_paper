@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\SubscriberController;
@@ -12,6 +13,13 @@ Route::get('/', [NewsController::class, 'home'])->name('home');
 Route::get('/sitemap.xml', [FeedController::class, 'sitemap'])->name('sitemap');
 Route::get('/feed', [FeedController::class, 'rss'])->name('rss');
 Route::get('/robots.txt', [FeedController::class, 'robots'])->name('robots');
+
+// Contact form — declared before the /{page} catch-all.
+Route::get('/kontakt', [ContactController::class, 'show'])->name('contact');
+// Rate limited: a person sends a couple of messages, a bot sends hundreds.
+Route::post('/kontakt', [ContactController::class, 'send'])
+    ->middleware('throttle:5,60')
+    ->name('contact.send');
 
 // Static pages (content managed in admin → General Settings)
 Route::get('/{page}', [NewsController::class, 'page'])

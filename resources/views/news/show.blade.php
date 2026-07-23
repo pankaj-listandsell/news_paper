@@ -180,6 +180,9 @@
                     <textarea name="body" rows="4" placeholder="Ihr Kommentar..."
                               class="mt-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none">{{ old('body') }}</textarea>
                     @error('body')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+
+                    @include('partials.recaptcha')
+
                     <button class="mt-4 rounded-md bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-dark)]">Kommentar absenden</button>
                 </form>
             </section>
