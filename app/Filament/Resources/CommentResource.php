@@ -11,7 +11,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 class CommentResource extends Resource
 {
@@ -31,6 +32,14 @@ class CommentResource extends Resource
     public static function getNavigationBadgeColor(): ?string
     {
         return 'warning';
+    }
+
+    /**
+     * Eager-load the article so the list is a couple of queries, not one per row.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('article');
     }
 
     public static function form(Form $form): Form
@@ -57,6 +66,7 @@ class CommentResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
+            ->striped()
             ->columns([
                 Tables\Columns\TextColumn::make('author_name')
                     ->searchable(),
@@ -74,7 +84,34 @@ class CommentResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_approved'),
+                Tables\Filters\Filter::make('created_at')
+                    ->label('Date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('From')
+                            ->native(false),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Until')
+                            ->native(false),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['from'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '>=', $date))
+                        ->when($data['until'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '<=', $date)))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if ($data['from'] ?? null) {
+                            $indicators[] = 'From ' . Carbon::parse($data['from'])->format('d M Y');
+                        }
+
+                        if ($data['until'] ?? null) {
+                            $indicators[] = 'Until ' . Carbon::parse($data['until'])->format('d M Y');
+                        }
+
+                        return $indicators;
+                    }),
             ])
+            ->filtersFormColumns(2)
             ->actions([
                 Tables\Actions\Action::make('approve')
                     ->icon('heroicon-o-check')
@@ -86,6 +123,18 @@ class CommentResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('approve')
+                        ->label('Approve')
+                        ->icon('heroicon-o-check')
+                        ->color('success')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records) => $records->each->update(['is_approved' => true])),
+                    Tables\Actions\BulkAction::make('unapprove')
+                        ->label('Unapprove')
+                        ->icon('heroicon-o-x-mark')
+                        ->color('gray')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records) => $records->each->update(['is_approved' => false])),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

@@ -9,6 +9,9 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class ArticleResource extends Resource
@@ -20,6 +23,25 @@ class ArticleResource extends Resource
     protected static ?string $navigationGroup = 'Content';
 
     protected static ?int $navigationSort = 1;
+
+    protected static ?string $recordTitleAttribute = 'title';
+
+    /**
+     * Eager-load the relations the table renders, so a page of articles is a
+     * couple of queries instead of one per row.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['category', 'author']);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'excerpt'];
+    }
 
     public static function form(Form $form): Form
     {
@@ -121,6 +143,8 @@ class ArticleResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
+            ->striped()
+            ->paginationPageOptions([10, 25, 50, 100])
             ->columns([
                 Tables\Columns\ImageColumn::make('featured_image')
                     ->disk('public')
@@ -165,12 +189,41 @@ class ArticleResource extends Resource
                     ->relationship('category', 'name'),
                 Tables\Filters\TernaryFilter::make('is_featured'),
                 Tables\Filters\TernaryFilter::make('is_breaking'),
+                Tables\Filters\Filter::make('published_at')
+                    ->label('Publish date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('Published from')
+                            ->native(false),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Published until')
+                            ->native(false),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['from'] ?? null, fn (Builder $q, $date) => $q->whereDate('published_at', '>=', $date))
+                        ->when($data['until'] ?? null, fn (Builder $q, $date) => $q->whereDate('published_at', '<=', $date)))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if ($data['from'] ?? null) {
+                            $indicators[] = 'From ' . Carbon::parse($data['from'])->format('d M Y');
+                        }
+
+                        if ($data['until'] ?? null) {
+                            $indicators[] = 'Until ' . Carbon::parse($data['until'])->format('d M Y');
+                        }
+
+                        return $indicators;
+                    }),
             ])
+            ->filtersFormColumns(2)
             ->actions([
                 Tables\Actions\Action::make('aiRewrite')
                     ->label('AI rewrite')
                     ->icon('heroicon-o-sparkles')
                     ->color('info')
+                    ->iconButton()
+                    ->tooltip('Rewrite title, excerpt and SEO with AI')
                     ->form([
                         Forms\Components\Select::make('provider')
                             ->label('Provider')
@@ -224,6 +277,8 @@ class ArticleResource extends Resource
                     ->label('AI image')
                     ->icon('heroicon-o-photo')
                     ->color('warning')
+                    ->iconButton()
+                    ->tooltip('Generate a new AI image')
                     ->requiresConfirmation()
                     ->modalDescription('Generates a new AI image (OpenAI). This replaces the current image.')
                     ->action(function (Article $record) {
@@ -258,10 +313,51 @@ class ArticleResource extends Resource
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('viewOnSite')
+                        ->label('View on site')
+                        ->icon('heroicon-o-arrow-top-right-on-square')
+                        ->url(fn (Article $record) => route('article.show', $record))
+                        ->openUrlInNewTab()
+                        ->visible(fn (Article $record) => $record->status === 'published'),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('publish')
+                        ->label('Publish')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records) {
+                            $records->each(fn (Article $r) => $r->update([
+                                'status'       => 'published',
+                                // Keep the original date; only fill it when missing.
+                                'published_at' => $r->published_at ?? now(),
+                            ]));
+                        }),
+                    Tables\Actions\BulkAction::make('unpublish')
+                        ->label('Move to draft')
+                        ->icon('heroicon-o-eye-slash')
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records) => $records->each->update(['status' => 'draft'])),
+                    Tables\Actions\BulkAction::make('feature')
+                        ->label('Mark as featured')
+                        ->icon('heroicon-o-star')
+                        ->color('warning')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records) => $records->each->update(['is_featured' => true])),
+                    Tables\Actions\BulkAction::make('unfeature')
+                        ->label('Remove featured')
+                        ->icon('heroicon-o-star')
+                        ->color('gray')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records) => $records->each->update(['is_featured' => false])),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

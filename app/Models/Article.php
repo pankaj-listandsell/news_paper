@@ -132,9 +132,9 @@ class Article extends Model
 
     public function getBylineAttribute(): string
     {
-        // Aggregated articles are credited to their original publisher;
-        // locally-written ones to their author.
-        return $this->source_name ?: ($this->author?->name ?? 'Redaktion');
+        // Only ever our own author — the original publisher is never shown
+        // on the public site.
+        return $this->author?->name ?: 'Redaktion';
     }
 
     public function getReadingTimeAttribute(): int

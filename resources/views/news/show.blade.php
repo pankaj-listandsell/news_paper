@@ -96,10 +96,14 @@
             @endif
 
             <div class="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                @if ($article->source_name)
-                    <span class="font-semibold text-gray-700">{{ $article->source_name }}</span>
-                @elseif ($article->author)
-                    <a href="{{ route('author.show', $article->author) }}" class="font-semibold text-gray-700 hover:text-[var(--brand)]">{{ $article->author->name }}</a>
+                @if ($article->author)
+                    @if ($article->author->show_on_frontend)
+                        <a href="{{ route('author.show', $article->author) }}" class="font-semibold text-gray-700 hover:text-[var(--brand)]">{{ $article->author->name }}</a>
+                    @else
+                        <span class="font-semibold text-gray-700">{{ $article->author->name }}</span>
+                    @endif
+                @else
+                    <span class="font-semibold text-gray-700">Redaktion</span>
                 @endif
                 <span>&middot;</span>
                 <span>{{ $article->published_at?->locale('de')->translatedFormat('d. F Y, H:i') }} Uhr</span>

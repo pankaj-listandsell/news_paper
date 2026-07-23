@@ -119,6 +119,15 @@ class ManageGeneralSettings extends Page implements HasForms
     {
         return $form
             ->schema([
+                Forms\Components\Tabs::make('Settings')
+                    ->columnSpanFull()
+                    ->persistTabInQueryString()
+                    ->tabs([
+
+                Forms\Components\Tabs\Tab::make('General')
+                    ->icon('heroicon-o-globe-alt')
+                    ->schema([
+
                 Forms\Components\Section::make('Site identity')
                     ->description('Shown in the masthead, browser tab and search results.')
                     ->schema([
@@ -173,6 +182,42 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->columnSpanFull(),
                     ]),
 
+                    ]), // end General tab
+
+                Forms\Components\Tabs\Tab::make('Content')
+                    ->icon('heroicon-o-document-text')
+                    ->schema([
+
+                Forms\Components\Section::make('Comments')
+                    ->schema([
+                        Forms\Components\Toggle::make('comments_enabled')
+                            ->label('Show the comment section on articles')
+                            ->helperText('Turn off to hide comments (and stop new ones) across the whole site.'),
+                    ]),
+
+                Forms\Components\Section::make('Pages')
+                    ->description('Impressum and Datenschutz are required for German sites. Leave a field empty and that page returns 404.')
+                    ->schema([
+                        Forms\Components\RichEditor::make('about_content')
+                            ->label('Über uns (About us)')
+                            ->helperText('Published at /ueber-uns and linked in the footer.')
+                            ->columnSpanFull(),
+                        Forms\Components\RichEditor::make('imprint_content')
+                            ->label('Impressum')
+                            ->helperText('Published at /impressum and linked in the footer.')
+                            ->columnSpanFull(),
+                        Forms\Components\RichEditor::make('privacy_content')
+                            ->label('Datenschutzerklärung')
+                            ->helperText('Published at /datenschutz and linked in the footer.')
+                            ->columnSpanFull(),
+                    ]),
+
+                    ]), // end Content tab
+
+                Forms\Components\Tabs\Tab::make('Scraping')
+                    ->icon('heroicon-o-arrow-path')
+                    ->schema([
+
                 Forms\Components\Section::make('Scraping schedule')
                     ->description('When the news scraper runs (German time). Needs the schedule:run cron active on the server.')
                     ->schema([
@@ -182,10 +227,22 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->default('times')
                             ->required()
                             ->live(),
-                        Forms\Components\TagsInput::make('scrape_times')
+                        Forms\Components\Select::make('scrape_times')
                             ->label('Times')
-                            ->placeholder('06:00')
-                            ->helperText('Add times like 06:00, 14:00, 23:00 — the scraper runs at each (24h, German time). Press Enter after each.')
+                            ->multiple()
+                            ->searchable()
+                            ->options(SiteSettings::scrapeTimeOptions())
+                            ->placeholder('Select hours…')
+                            ->helperText('Pick the hours the scraper runs (24h, German time) — e.g. 06:00, 14:00, 23:00.')
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                // Keep the picked hours in chronological order.
+                                if (is_array($state)) {
+                                    $state = array_unique($state);
+                                    sort($state);
+                                    $set('scrape_times', $state);
+                                }
+                            })
                             ->visible(fn (Forms\Get $get) => $get('scrape_frequency') === 'times'),
                         Forms\Components\Toggle::make('scrape_notify')
                             ->label('Email me a summary after each run')
@@ -193,9 +250,14 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->columnSpanFull(),
                     ])->columns(2),
 
+                    ]), // end Scraping tab
+
+                Forms\Components\Tabs\Tab::make('Email')
+                    ->icon('heroicon-o-envelope')
+                    ->schema([
+
                 Forms\Components\Section::make('Email (SMTP)')
                     ->description('Outgoing mail account for scrape reports and alerts. Leave empty to use the server default (.env). Save, then use “Send test email”.')
-                    ->collapsed()
                     ->schema([
                         Forms\Components\Select::make('mail_mailer')
                             ->label('Mailer')
@@ -263,6 +325,12 @@ class ManageGeneralSettings extends Page implements HasForms
                         ])->columnSpanFull(),
                     ])->columns(2),
 
+                    ]), // end Email tab
+
+                Forms\Components\Tabs\Tab::make('SEO & Privacy')
+                    ->icon('heroicon-o-magnifying-glass')
+                    ->schema([
+
                 Forms\Components\Section::make('Tracking & verification')
                     ->description('Scripts are added to the public website only — never to this admin panel.')
                     ->schema([
@@ -284,39 +352,26 @@ class ManageGeneralSettings extends Page implements HasForms
                             ->label('Show GDPR cookie consent banner')
                             ->helperText('Required in Germany when Analytics is active — Google Analytics then loads only after the visitor clicks “Akzeptieren”.')
                             ->columnSpanFull(),
-                        Forms\Components\Toggle::make('comments_enabled')
-                            ->label('Show the comment section on articles')
-                            ->helperText('Turn off to hide comments (and stop new ones) across the whole site.')
-                            ->columnSpanFull(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Pages')
-                    ->description('Impressum and Datenschutz are required for German sites. Leave a field empty and that page returns 404.')
-                    ->collapsed()
+                    ]), // end SEO & Privacy tab
+
+                Forms\Components\Tabs\Tab::make('Social')
+                    ->icon('heroicon-o-share')
                     ->schema([
-                        Forms\Components\RichEditor::make('about_content')
-                            ->label('Über uns (About us)')
-                            ->helperText('Published at /ueber-uns and linked in the footer.')
-                            ->columnSpanFull(),
-                        Forms\Components\RichEditor::make('imprint_content')
-                            ->label('Impressum')
-                            ->helperText('Published at /impressum and linked in the footer.')
-                            ->columnSpanFull(),
-                        Forms\Components\RichEditor::make('privacy_content')
-                            ->label('Datenschutzerklärung')
-                            ->helperText('Published at /datenschutz and linked in the footer.')
-                            ->columnSpanFull(),
-                    ]),
 
                 Forms\Components\Section::make('Social links')
                     ->description('Leave empty to hide a link.')
-                    ->collapsed()
                     ->schema([
                         Forms\Components\TextInput::make('social_facebook')->label('Facebook')->url()->maxLength(255),
                         Forms\Components\TextInput::make('social_twitter')->label('X (Twitter)')->url()->maxLength(255),
                         Forms\Components\TextInput::make('social_instagram')->label('Instagram')->url()->maxLength(255),
                         Forms\Components\TextInput::make('social_youtube')->label('YouTube')->url()->maxLength(255),
                     ])->columns(2),
+
+                    ]), // end Social tab
+
+                    ]), // end Tabs
             ])
             ->statePath('data');
     }
@@ -338,10 +393,15 @@ class ManageGeneralSettings extends Page implements HasForms
                 // instead of collapsing to '' and falling back to the default.
                 $value = $value ? '1' : '0';
             } elseif (is_array($value)) {
-                // Times are a list (store comma-separated); uploads are a single path.
-                $value = $key === 'scrape_times'
-                    ? implode(',', $value)
-                    : (reset($value) ?: '');
+                if ($key === 'scrape_times') {
+                    // Store the times de-duplicated and in chronological order.
+                    $value = array_unique($value);
+                    sort($value);
+                    $value = implode(',', $value);
+                } else {
+                    // Uploads are a single path.
+                    $value = reset($value) ?: '';
+                }
             }
 
             Setting::set($key, (string) $value);

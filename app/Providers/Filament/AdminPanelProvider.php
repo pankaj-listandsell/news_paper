@@ -11,6 +11,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Support\Facades\Blade;
@@ -39,6 +40,8 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Red,
             ])
             ->sidebarCollapsibleOnDesktop()
+            // Wide tables (articles have ~9 columns) get the whole screen.
+            ->maxContentWidth(MaxWidth::Full)
             ->navigationGroups([
                 NavigationGroup::make('Content'),
                 NavigationGroup::make('Engagement'),

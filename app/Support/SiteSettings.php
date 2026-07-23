@@ -205,7 +205,29 @@ class SiteSettings
             fn ($t) => preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $t)
         );
 
-        return array_values($times) ?: ['06:00', '14:00', '23:00'];
+        // Zero-padded HH:MM sorts chronologically as plain strings.
+        $times = array_unique($times);
+        sort($times);
+
+        return $times ?: ['06:00', '14:00', '23:00'];
+    }
+
+    /**
+     * Selectable scrape times — full hours only (00:00 … 23:00), which always
+     * line up with the every-5-minutes cron that runs the scheduler.
+     *
+     * @return array<string, string>
+     */
+    public static function scrapeTimeOptions(): array
+    {
+        $options = [];
+
+        for ($h = 0; $h < 24; $h++) {
+            $time = sprintf('%02d:00', $h);
+            $options[$time] = $time;
+        }
+
+        return $options;
     }
 
     /**

@@ -61,10 +61,10 @@ class NewsSourceResource extends Resource
                     Forms\Components\TextInput::make('max_items')
                         ->label('Max items per run')
                         ->numeric()
-                        ->default(0)
+                        ->default(10)
                         ->minValue(0)
                         ->maxValue(200)
-                        ->helperText('0 = no limit. A safety cap on how many items one run may import.'),
+                        ->helperText('Cap on how many items one run may import. Keep it low (3–10) when AI rewrite/image is on — the first run has no cutoff yet and would otherwise process the whole feed. 0 = no limit (not recommended).'),
                     Forms\Components\Toggle::make('fetch_full_content')
                         ->label('Fetch full article')
                         ->default(false)
@@ -102,6 +102,8 @@ class NewsSourceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('name')
+            ->striped()
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
