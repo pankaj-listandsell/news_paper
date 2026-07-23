@@ -62,6 +62,8 @@ class FeedController extends Controller
         $lines = [
             'User-agent: *',
             'Disallow: /admin',
+            'Disallow: /suche',
+            // The old English path still 301s to /suche — keep crawlers off both.
             'Disallow: /search',
             '',
             'Sitemap: ' . route('sitemap'),
