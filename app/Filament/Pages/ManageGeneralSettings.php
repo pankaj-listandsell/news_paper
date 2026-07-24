@@ -192,19 +192,25 @@ class ManageGeneralSettings extends Page implements HasForms
                     ]),
 
                 Forms\Components\Section::make('Pages')
-                    ->description('Impressum and Datenschutz are required for German sites. Leave a field empty and that page returns 404.')
+                    ->description('Impressum and Datenschutz are required for German sites. Paste raw HTML — it is rendered as-is on the public page. Leave a field empty and that page returns 404.')
                     ->schema([
-                        Forms\Components\RichEditor::make('about_content')
+                        Forms\Components\Textarea::make('about_content')
                             ->label('Über uns (About us)')
-                            ->helperText('Published at /ueber-uns and linked in the footer.')
+                            ->helperText('Raw HTML. Published at /ueber-uns and linked in the footer.')
+                            ->rows(8)
+                            ->extraInputAttributes(['class' => 'font-mono text-sm', 'spellcheck' => 'false'])
                             ->columnSpanFull(),
-                        Forms\Components\RichEditor::make('imprint_content')
+                        Forms\Components\Textarea::make('imprint_content')
                             ->label('Impressum')
-                            ->helperText('Published at /impressum and linked in the footer.')
+                            ->helperText('Raw HTML. Published at /impressum and linked in the footer.')
+                            ->rows(8)
+                            ->extraInputAttributes(['class' => 'font-mono text-sm', 'spellcheck' => 'false'])
                             ->columnSpanFull(),
-                        Forms\Components\RichEditor::make('privacy_content')
+                        Forms\Components\Textarea::make('privacy_content')
                             ->label('Datenschutzerklärung')
-                            ->helperText('Published at /datenschutz and linked in the footer.')
+                            ->helperText('Raw HTML. Published at /datenschutz and linked in the footer.')
+                            ->rows(16)
+                            ->extraInputAttributes(['class' => 'font-mono text-sm', 'spellcheck' => 'false'])
                             ->columnSpanFull(),
                     ]),
 
