@@ -229,7 +229,17 @@ class ScrapeSourceJob implements ShouldQueue
         );
 
         if ($result === null) {
-            return $data; // keep original title/excerpt
+            // AI rewrite failed (e.g. quota/billing exhausted). We must NOT
+            // let the raw scraped copy go live, so force the article to draft
+            // regardless of the source's auto_publish setting. It stays in the
+            // admin panel for review / manual publish once AI is working again.
+            $data['status'] = 'draft';
+
+            Log::info(
+                "AI rewrite failed for source {$this->source->id}; article held as draft: {$data['source_url']}"
+            );
+
+            return $data; // keep original title/excerpt, but unpublished
         }
 
         // Map the model's chosen category name back to an id (case-insensitive).
