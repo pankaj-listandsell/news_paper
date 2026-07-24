@@ -16,7 +16,7 @@ class ContactFormMessage extends Mailable
     public function __construct(
         public string $senderName,
         public string $senderEmail,
-        public string $subject,
+        public string $formSubject,
         public string $body,
     ) {
     }
@@ -24,7 +24,7 @@ class ContactFormMessage extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Kontaktformular: ' . $this->subject,
+            subject: 'Kontaktformular: ' . $this->formSubject,
             // Hitting "Reply" answers the visitor directly.
             replyTo: [new Address($this->senderEmail, $this->senderName)],
         );

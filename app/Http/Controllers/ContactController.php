@@ -72,7 +72,7 @@ class ContactController extends Controller
                 Mail::to($to)->send(new ContactFormMessage(
                     senderName:  $data['name'],
                     senderEmail: $data['email'],
-                    subject:     $data['subject'],
+                    formSubject: $data['subject'],
                     body:        $data['message'],
                 ));
             } catch (\Throwable $e) {

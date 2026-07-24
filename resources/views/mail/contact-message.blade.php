@@ -3,7 +3,7 @@
 
 **Von:** {{ $senderName }}
 **E-Mail:** {{ $senderEmail }}
-**Betreff:** {{ $subject }}
+**Betreff:** {{ $formSubject }}
 
 <x-mail::panel>
 {{ $body }}
