@@ -120,6 +120,18 @@
                 {!! $article->body !!}
             </div>
 
+            {{-- Links to more from the same category, right within the content --}}
+            @if ($sameCategory->isNotEmpty())
+                <ul class="mt-3 space-y-2">
+                    @foreach ($sameCategory as $item)
+                        <li>
+                            <a href="{{ route('article.show', $item) }}"
+                               class="font-semibold text-[var(--brand)] hover:underline">{{ $item->title }}</a>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
             @include('partials.share-buttons', ['article' => $article])
 
             @if ($article->tags->isNotEmpty())
@@ -130,6 +142,9 @@
                     @endforeach
                 </div>
             @endif
+
+            {{-- Author intro card --}}
+            @include('partials.author-bio', ['author' => $article->author])
 
             {{-- Comments --}}
             @if (\App\Support\SiteSettings::commentsEnabled())

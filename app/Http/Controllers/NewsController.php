@@ -48,7 +48,27 @@ class NewsController extends Controller
         return view('news.show', [
             'article' => $article,
             'related' => $this->relatedArticles($article),
+            'sameCategory' => $this->sameCategoryArticles($article),
         ]);
+    }
+
+    /**
+     * A few recent published articles from the same category, shown inline
+     * right after the article body.
+     */
+    private function sameCategoryArticles(Article $article, int $limit = 2)
+    {
+        if (! $article->category_id) {
+            return collect();
+        }
+
+        return Article::published()
+            ->where('category_id', $article->category_id)
+            ->whereKeyNot($article->id)
+            ->with('category')
+            ->latest('published_at')
+            ->take($limit)
+            ->get();
     }
 
     /**
