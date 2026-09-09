@@ -17,7 +17,7 @@ class Article extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['title', 'status', 'category_id', 'is_featured', 'is_breaking'])
+            ->logOnly(['title', 'status', 'http_status', 'redirect_url', 'category_id', 'is_featured', 'is_breaking'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->setDescriptionForEvent(fn (string $event) => "Article {$event}");
@@ -26,6 +26,7 @@ class Article extends Model
     protected $fillable = [
         'title', 'slug', 'subtitle', 'excerpt', 'body', 'featured_image',
         'category_id', 'user_id', 'status', 'is_featured', 'is_breaking',
+        'http_status', 'redirect_url',
         'views', 'meta_title', 'meta_description', 'published_at',
         'source_id', 'source_name', 'source_url',
     ];
@@ -33,6 +34,7 @@ class Article extends Model
     protected $casts = [
         'is_featured'  => 'boolean',
         'is_breaking'  => 'boolean',
+        'http_status'  => 'integer',
         'published_at' => 'datetime',
     ];
 
@@ -105,10 +107,28 @@ class Article extends Model
         return $this->belongsTo(NewsSource::class, 'source_id');
     }
 
+    /**
+     * Bump the view counter without touching updated_at.
+     *
+     * Eloquent's increment() stamps updated_at as a matter of course, which
+     * would make every single page view look like an edit — to the sitemap's
+     * <lastmod>, and to the conditional-GET check on the detail page. A read
+     * is not a write.
+     */
+    public function recordView(): void
+    {
+        static::withoutTimestamps(fn () => $this->increment('views'));
+    }
+
     public function scopePublished($query)
     {
         return $query->where('status', 'published')
-                     ->where('published_at', '<=', now());
+                     ->where('published_at', '<=', now())
+                     // A 301 article is not a page any more, just a signpost, so
+                     // it stays out of every listing, the sitemap and the RSS
+                     // feed. A frozen (304) one still renders normally and is
+                     // listed like any other.
+                     ->where('http_status', '!=', 301);
     }
 
     public function getRouteKeyName(): string

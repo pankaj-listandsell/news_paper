@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class NewsController extends Controller
 {
@@ -38,18 +40,84 @@ class NewsController extends Controller
         return view('news.home', compact('featured', 'latest', 'mostViewed', 'categoryBlocks'));
     }
 
-    public function show(Article $article)
+    public function show(Request $request, Article $article)
     {
         abort_unless($article->status === 'published' && $article->published_at <= now(), 404);
 
-        $article->increment('views');
+        // Moved for good — hand the link equity to the new address.
+        if ($article->http_status === 301 && filled($article->redirect_url)) {
+            return redirect()->away($article->redirect_url, 301);
+        }
+
+        // Conditional GET. A client that already holds a copy of this article
+        // asks "anything new since X?" — a 304 saves it the download, and
+        // tells a crawler the page is stable so it stops coming back so often.
+        //
+        // Nobody can ever land on an empty page this way: only a client that
+        // already has the article asks the question in the first place.
+        $notModified = $this->withFreshness(new SymfonyResponse(), $article);
+
+        // A frozen article (http_status 304) answers "nothing changed" to every
+        // such question, even after an edit.
+        $frozen = $article->http_status === 304 && $this->isConditional($request);
+
+        if ($frozen || $notModified->isNotModified($request)) {
+            return $notModified->setNotModified();
+        }
+
+        $article->recordView();
         $article->load(['category', 'author', 'tags', 'comments' => fn ($q) => $q->approved()->latest()]);
 
-        return view('news.show', [
+        return $this->withFreshness(response()->view('news.show', [
             'article' => $article,
             'related' => $this->relatedArticles($article),
             'sameCategory' => $this->sameCategoryArticles($article),
-        ]);
+        ]), $article);
+    }
+
+    /**
+     * Stamp a response with this article's freshness, so the next request for
+     * it can be answered with a 304.
+     */
+    private function withFreshness(SymfonyResponse $response, Article $article): SymfonyResponse
+    {
+        $lastModified = $this->lastModified($article);
+
+        $response->setLastModified($lastModified);
+        $response->setEtag(md5($article->getKey() . '-' . $lastModified->getTimestamp()));
+
+        // Private, because the page carries a CSRF token for the comment form
+        // — only the visitor's own browser may keep a copy, never a shared
+        // proxy. max-age 0 + must-revalidate: always ask, and reuse on a 304.
+        $response->setPrivate();
+        $response->setMaxAge(0);
+        $response->headers->addCacheControlDirective('must-revalidate');
+
+        return $response;
+    }
+
+    /**
+     * When this article's page last actually changed. A newly approved comment
+     * changes it too, even though the article itself was never touched.
+     */
+    private function lastModified(Article $article): Carbon
+    {
+        $latestComment = $article->comments()->approved()->max('created_at');
+
+        return $latestComment
+            ? max($article->updated_at, Carbon::parse($latestComment))
+            : $article->updated_at;
+    }
+
+    /**
+     * Is the caller already holding a copy of this page? Only then may we
+     * answer "nothing changed" — a 304 carries no body, so a client with
+     * nothing cached has to be given the real page.
+     */
+    private function isConditional(Request $request): bool
+    {
+        return $request->hasHeader('If-None-Match')
+            || $request->hasHeader('If-Modified-Since');
     }
 
     /**

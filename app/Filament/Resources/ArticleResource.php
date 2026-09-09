@@ -101,6 +101,33 @@ class ArticleResource extends Resource
                             Forms\Components\DateTimePicker::make('published_at')
                                 ->label('Publish date')
                                 ->default(now()),
+                            Forms\Components\Select::make('http_status')
+                                ->label('HTTP status')
+                                ->options([
+                                    200 => '200 — OK (normal page)',
+                                    301 => '301 — Moved permanently',
+                                    304 => '304 — Not modified (frozen for crawlers)',
+                                ])
+                                ->default(200)
+                                ->required()
+                                ->selectablePlaceholder(false)
+                                ->live()
+                                ->helperText(fn (Forms\Get $get): string => match ((int) $get('http_status')) {
+                                    301 => 'Visitors and search engines are sent to the URL below.',
+                                    304 => 'Search engines are told the page never changes, so they stop re-crawling it. Readers still get the full page as normal.',
+                                    default => 'The article is served normally.',
+                                }),
+                            Forms\Components\TextInput::make('redirect_url')
+                                ->label('Redirect to')
+                                ->placeholder('https://hauptstadt-report.de/nachrichten/neuer-artikel')
+                                ->helperText('Full URL, or a path starting with /')
+                                ->maxLength(255)
+                                ->required()
+                                ->regex('/^(https?:\/\/|\/)/')
+                                ->validationMessages([
+                                    'regex' => 'Enter a full URL (https://…) or a path starting with /.',
+                                ])
+                                ->visible(fn (Forms\Get $get): bool => (int) $get('http_status') === 301),
                             Forms\Components\Toggle::make('is_featured')
                                 ->label('Featured'),
                             Forms\Components\Toggle::make('is_breaking')
@@ -165,6 +192,19 @@ class ArticleResource extends Resource
                         'pending'   => 'warning',
                         default     => 'gray',
                     }),
+                Tables\Columns\TextColumn::make('http_status')
+                    ->label('HTTP')
+                    ->badge()
+                    ->color(fn (int $state): string => match ($state) {
+                        301     => 'warning',
+                        304     => 'info',
+                        default => 'gray',
+                    })
+                    ->tooltip(fn (Article $r): ?string => match ($r->http_status) {
+                        301     => 'Redirects to ' . $r->redirect_url,
+                        304     => 'Frozen — crawlers get 304, readers get the page',
+                        default => null,
+                    }),
                 Tables\Columns\IconColumn::make('is_featured')
                     ->boolean()
                     ->label('Feat.'),
@@ -184,6 +224,13 @@ class ArticleResource extends Resource
                         'draft'     => 'Draft',
                         'pending'   => 'Pending review',
                         'published' => 'Published',
+                    ]),
+                Tables\Filters\SelectFilter::make('http_status')
+                    ->label('HTTP status')
+                    ->options([
+                        200 => '200 — OK',
+                        301 => '301 — Moved permanently',
+                        304 => '304 — Frozen',
                     ]),
                 Tables\Filters\SelectFilter::make('category')
                     ->relationship('category', 'name'),
