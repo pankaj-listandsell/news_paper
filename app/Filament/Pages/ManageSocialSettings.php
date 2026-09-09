@@ -39,6 +39,24 @@ class ManageSocialSettings extends Page implements HasForms
 
     protected static string $view = 'filament.pages.manage-social-settings';
 
+    /**
+     * Tokens run out quietly — Facebook and LinkedIn both expire theirs after
+     * about two months — so the count of accounts needing attention is put
+     * where it cannot be missed.
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) SocialAccount::where('is_active', true)
+            ->get()
+            ->filter(fn (SocialAccount $a) => $a->tokenHasExpired() || $a->tokenExpiresSoon())
+            ->count() ?: null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
     /** Stands in for a stored secret, so the real one never reaches the page. */
     private const KEPT = '__unchanged__';
 
@@ -168,6 +186,32 @@ class ManageSocialSettings extends Page implements HasForms
         }
 
         $this->form->fill($values);
+
+        $this->warnAboutExpiringTokens();
+    }
+
+    /**
+     * Nothing else tells the admin a token is about to lapse, and a lapsed
+     * token means posting stops without a word.
+     */
+    private function warnAboutExpiringTokens(): void
+    {
+        foreach (SocialAccount::where('is_active', true)->get() as $account) {
+            if ($account->tokenHasExpired()) {
+                Notification::make()
+                    ->title($account->label() . ': access token has expired')
+                    ->body('Nothing is being posted to this account. Reconnect it below.')
+                    ->danger()
+                    ->persistent()
+                    ->send();
+            } elseif ($account->tokenExpiresSoon()) {
+                Notification::make()
+                    ->title($account->label() . ': access token runs out ' . $account->token_expires_at->diffForHumans())
+                    ->body('Renew it before posting stops.')
+                    ->warning()
+                    ->send();
+            }
+        }
     }
 
     public function form(Form $form): Form
@@ -265,7 +309,12 @@ class ManageSocialSettings extends Page implements HasForms
         }
 
         if ($account->tokenHasExpired()) {
-            return 'The access token has expired — reconnect this account.';
+            return 'The access token has expired — reconnect this account. Nothing will post until you do.';
+        }
+
+        if ($account->tokenExpiresSoon()) {
+            return 'The access token runs out ' . $account->token_expires_at->diffForHumans()
+                . '. Renew it before posting stops.';
         }
 
         $publisher = $factory->for($account->platform);

@@ -188,6 +188,68 @@ class ArticleResource extends Resource
     }
 
     /**
+     * The "post to" checkboxes. Shared by the row action and the button on the
+     * article's own page, so the two cannot drift apart.
+     *
+     * @return array<int, Forms\Components\CheckboxList>
+     */
+    public static function shareFormSchema(Article $article): array
+    {
+        return [
+            Forms\Components\CheckboxList::make('platforms')
+                ->label('Post to')
+                ->options(static::sharablePlatforms($article))
+                ->descriptions(static::shareStatuses($article))
+                // Tick what has not gone out yet; leave the rest for the
+                // editor to decide about.
+                ->default(array_keys(static::sharablePlatforms($article, onlyUnsent: true)))
+                ->required(),
+        ];
+    }
+
+    /**
+     * @param  array<int, string>  $platforms
+     */
+    public static function performShare(Article $article, array $platforms): void
+    {
+        $sharer = new SocialSharer();
+        $sent   = [];
+        $held   = [];
+
+        foreach ($platforms as $platform) {
+            $share = $sharer->share($article, $platform);
+
+            $share->wasSent()
+                ? $sent[] = $platform
+                : $held[] = $platform . ' (' . $share->error . ')';
+        }
+
+        if ($sent !== []) {
+            Notification::make()
+                ->title('Posted to ' . implode(', ', $sent))
+                ->success()
+                ->send();
+        }
+
+        if ($held !== []) {
+            Notification::make()
+                ->title('Not posted')
+                ->body(implode("\n", $held))
+                ->danger()
+                ->persistent()
+                ->send();
+        }
+    }
+
+    /**
+     * Is there anywhere to post at all?
+     */
+    public static function hasConnectedAccounts(): bool
+    {
+        return SocialAccount::where('is_active', true)->exists();
+    }
+
+    /**
      * Platforms this article can be sent to right now.
      *
      * @return array<string, string>  platform => label
@@ -340,48 +402,11 @@ class ArticleResource extends Resource
                     ->icon('heroicon-o-share')
                     ->color('gray')
                     // Nothing to offer until at least one account is connected.
-                    ->visible(fn (): bool => SocialAccount::where('is_active', true)->exists())
-                    ->form(fn (Article $record): array => [
-                        Forms\Components\CheckboxList::make('platforms')
-                            ->label('Post to')
-                            ->options(static::sharablePlatforms($record))
-                            ->descriptions(static::shareStatuses($record))
-                            ->default(array_keys(static::sharablePlatforms($record, onlyUnsent: true)))
-                            ->required(),
-                    ])
+                    ->visible(fn (): bool => static::hasConnectedAccounts())
+                    ->form(fn (Article $record): array => static::shareFormSchema($record))
                     ->modalHeading(fn (Article $record): string => 'Share: ' . $record->title)
                     ->modalSubmitActionLabel('Post now')
-                    ->action(function (Article $record, array $data): void {
-                        $sharer = new SocialSharer();
-                        $sent   = [];
-                        $held   = [];
-
-                        foreach ($data['platforms'] as $platform) {
-                            $share = $sharer->share($record, $platform);
-
-                            if ($share->wasSent()) {
-                                $sent[] = $platform;
-                            } else {
-                                $held[] = $platform . ' (' . $share->error . ')';
-                            }
-                        }
-
-                        if ($sent !== []) {
-                            Notification::make()
-                                ->title('Posted to ' . implode(', ', $sent))
-                                ->success()
-                                ->send();
-                        }
-
-                        if ($held !== []) {
-                            Notification::make()
-                                ->title('Not posted')
-                                ->body(implode("\n", $held))
-                                ->danger()
-                                ->persistent()
-                                ->send();
-                        }
-                    }),
+                    ->action(fn (Article $record, array $data) => static::performShare($record, $data['platforms'])),
                 Tables\Actions\Action::make('aiRewrite')
                     ->label('AI rewrite')
                     ->icon('heroicon-o-sparkles')

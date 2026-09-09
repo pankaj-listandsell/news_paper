@@ -105,12 +105,10 @@ class SocialSharer
 
         $account = $this->account($platform);
 
-        if (! $account->exists || ! $account->is_active) {
-            return 'The account is switched off.';
-        }
-
-        if ($account->tokenHasExpired()) {
-            return 'The access token has expired. Reconnect the account.';
+        if (! $account->exists || ! $account->isUsable()) {
+            return $account->tokenHasExpired()
+                ? 'The access token has expired. Reconnect the account.'
+                : 'The account is switched off.';
         }
 
         $publisher = $this->publishers->for($platform);
