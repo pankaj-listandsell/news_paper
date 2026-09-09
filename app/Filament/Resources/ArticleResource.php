@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ArticleResource\Pages;
 use App\Models\Article;
+use App\Models\Category;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -139,14 +140,30 @@ class ArticleResource extends Resource
                                 ->relationship('category', 'name')
                                 ->searchable()
                                 ->preload()
-                                ->required(),
+                                ->required()
+                                ->live()
+                                // Picking a category fills in its author, but only
+                                // on a new article — an existing one keeps the
+                                // author it was published with.
+                                ->afterStateUpdated(function ($state, Forms\Set $set, string $operation): void {
+                                    if ($operation !== 'create' || blank($state)) {
+                                        return;
+                                    }
+
+                                    if ($authorId = Category::find($state)?->user_id) {
+                                        $set('user_id', $authorId);
+                                    }
+                                }),
                             Forms\Components\Select::make('user_id')
                                 ->label('Author')
                                 ->relationship('author', 'name')
                                 ->searchable()
                                 ->preload()
                                 ->default(auth()->id())
-                                ->required(),
+                                ->required()
+                                ->helperText(fn (Forms\Get $get): ?string => Category::find($get('category_id'))?->author?->name
+                                    ? 'Filled in from the category. You can still change it.'
+                                    : null),
                             Forms\Components\Select::make('tags')
                                 ->relationship('tags', 'name')
                                 ->multiple()

@@ -39,6 +39,12 @@ class CategoryResource extends Resource
                 Forms\Components\Textarea::make('description')
                     ->rows(3)
                     ->columnSpanFull(),
+                Forms\Components\Select::make('user_id')
+                    ->label('Author')
+                    ->relationship('author', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->helperText('New articles filed under this category are published under this name. Leave empty to let the news source decide. Articles that already exist keep their current author.'),
                 Forms\Components\TextInput::make('sort_order')
                     ->numeric()
                     ->default(0),
@@ -58,6 +64,11 @@ class CategoryResource extends Resource
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('author.name')
+                    ->label('Author')
+                    ->placeholder('— source decides —')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('articles_count')
                     ->counts('articles')
                     ->label('Articles')

@@ -65,6 +65,11 @@ class ScrapeSourceJob implements ShouldQueue
             $detector  = new \App\Support\DuplicateDetector();
             $skipped   = 0;
 
+            // Which author each category publishes under. Looked up once so the
+            // loop below costs no extra queries.
+            $categoryAuthors = \App\Models\Category::whereNotNull('user_id')
+                ->pluck('user_id', 'id');
+
             foreach ($records as $data) {
                 $isNew = ! Article::where('source_url', $data['source_url'])->exists();
 
@@ -85,6 +90,17 @@ class ScrapeSourceJob implements ShouldQueue
                 }
                 if ($imageGenerator) {
                     $data = $this->applyAiImage($imageGenerator, $data);
+                }
+
+                // The author follows the category — and the category is only
+                // settled once AI categorisation has had its say, so it is
+                // resolved here rather than back in the scraper. Without a
+                // category author the news source's own author stands.
+                if ($isNew) {
+                    $data['user_id'] = $categoryAuthors[$data['category_id']] ?? $data['user_id'];
+                } else {
+                    // An article we already have keeps the author it went out with.
+                    unset($data['user_id']);
                 }
 
                 $article = Article::updateOrCreate(
@@ -115,7 +131,7 @@ class ScrapeSourceJob implements ShouldQueue
         return ['created' => $created, 'updated' => $updated];
     }
 
-    private function resolveScraper(NewsSource $source): SourceScraper
+    protected function resolveScraper(NewsSource $source): SourceScraper
     {
         // RSS-only for now; swap here when HTML/API scrapers are added.
         return new RssScraper();
