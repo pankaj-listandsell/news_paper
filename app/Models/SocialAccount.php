@@ -3,15 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Crypt;
 
 /**
  * One connected social platform the site can post to.
  *
  * The credentials column holds whatever that platform needs — a page token
  * and page id for Facebook, an organisation urn for LinkedIn, OAuth tokens
- * for X. It is encrypted, so it is read and written through credential()
- * and setCredentials() rather than touched directly.
+ * for X. It is cast to an encrypted array, so it is never at rest in the
+ * clear, and is read through credential() so a key that was never stored
+ * simply comes back null.
  */
 class SocialAccount extends Model
 {
@@ -27,6 +27,7 @@ class SocialAccount extends Model
     ];
 
     protected $casts = [
+        'credentials'      => 'encrypted:array',
         'is_active'        => 'boolean',
         'auto_post'        => 'boolean',
         'token_expires_at' => 'datetime',
@@ -41,26 +42,27 @@ class SocialAccount extends Model
     }
 
     /**
+     * Everything stored for this account.
+     *
+     * Deliberately not named credentials(): a method whose name matches a
+     * column makes Eloquent treat that column as a relationship.
+     *
      * @return array<string, mixed>
      */
-    public function credentials(): array
+    public function credentialBag(): array
     {
-        if (blank($this->credentials)) {
-            return [];
-        }
-
         try {
-            return json_decode(Crypt::decryptString($this->credentials), true) ?: [];
+            return $this->credentials ?? [];
         } catch (\Throwable) {
-            // A rotated APP_KEY makes old ciphertext unreadable. Treat that as
-            // "not connected" rather than taking the whole admin panel down.
+            // A rotated APP_KEY leaves the stored ciphertext unreadable. Read
+            // that as "not connected" rather than taking the admin panel down.
             return [];
         }
     }
 
     public function credential(string $key, $default = null)
     {
-        return $this->credentials()[$key] ?? $default;
+        return $this->credentialBag()[$key] ?? $default;
     }
 
     /**
@@ -68,17 +70,15 @@ class SocialAccount extends Model
      */
     public function setCredentials(array $values): void
     {
-        // Blank values would otherwise wipe a token when a form is saved
-        // without re-typing it.
+        // Blank values would otherwise store an empty token and make the
+        // account look connected when it is not.
         $values = array_filter($values, fn ($v) => filled($v));
 
-        $this->credentials = $values === []
-            ? null
-            : Crypt::encryptString(json_encode($values));
+        $this->credentials = $values === [] ? null : $values;
     }
 
     /**
-     * Ready to post: switched on, and the driver has what it needs.
+     * Ready to post: switched on, and the token has not run out.
      */
     public function isUsable(): bool
     {

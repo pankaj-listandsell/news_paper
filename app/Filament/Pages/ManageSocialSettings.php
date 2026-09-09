@@ -224,7 +224,7 @@ class ManageSocialSettings extends Page implements HasForms
             // Merge rather than replace: a field left at the placeholder means
             // "keep what is already stored", so a saved token survives a save
             // that only changed a toggle.
-            $credentials = $account->credentials();
+            $credentials = $account->credentialBag();
 
             foreach (array_keys(self::CREDENTIALS[$platform]) as $key) {
                 $value = $state["{$platform}_{$key}"] ?? null;
