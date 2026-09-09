@@ -5,6 +5,10 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ArticleResource\Pages;
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\SocialAccount;
+use App\Models\SocialShare;
+use App\Social\SocialSharer;
+use Filament\Notifications\Notification;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -183,9 +187,48 @@ class ArticleResource extends Resource
             ]);
     }
 
+    /**
+     * Platforms this article can be sent to right now.
+     *
+     * @return array<string, string>  platform => label
+     */
+    public static function sharablePlatforms(Article $article, bool $onlyUnsent = false): array
+    {
+        $sent = $article->socialShares
+            ->where('status', SocialShare::SENT)
+            ->pluck('platform')
+            ->all();
+
+        return SocialAccount::where('is_active', true)
+            ->get()
+            ->when($onlyUnsent, fn ($accounts) => $accounts->reject(
+                fn (SocialAccount $a) => in_array($a->platform, $sent, true)
+            ))
+            ->mapWithKeys(fn (SocialAccount $a) => [$a->platform => $a->label()])
+            ->all();
+    }
+
+    /**
+     * A line under each checkbox saying where that platform stands.
+     *
+     * @return array<string, string>
+     */
+    public static function shareStatuses(Article $article): array
+    {
+        return $article->socialShares
+            ->mapWithKeys(fn (SocialShare $s) => [$s->platform => match ($s->status) {
+                SocialShare::SENT    => 'Already posted ' . $s->posted_at?->diffForHumans() . '. Ticking this does nothing.',
+                SocialShare::FAILED  => 'Failed after ' . $s->attempts . ' attempts: ' . $s->error,
+                SocialShare::SKIPPED => 'Deliberately excluded.',
+                default              => $s->error ? 'Waiting: ' . $s->error : 'Waiting.',
+            }])
+            ->all();
+    }
+
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('socialShares'))
             ->defaultSort('created_at', 'desc')
             ->striped()
             ->paginationPageOptions([10, 25, 50, 100])
@@ -228,6 +271,16 @@ class ArticleResource extends Resource
                 Tables\Columns\IconColumn::make('is_breaking')
                     ->boolean()
                     ->label('Break.'),
+                Tables\Columns\TextColumn::make('socialShares.platform')
+                    ->label('Shared')
+                    ->badge()
+                    ->separator(',')
+                    ->getStateUsing(fn (Article $r): array => $r->socialShares
+                        ->where('status', SocialShare::SENT)
+                        ->pluck('platform')
+                        ->all())
+                    ->placeholder('—')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('views')
                     ->numeric()
                     ->sortable(),
@@ -282,6 +335,53 @@ class ArticleResource extends Resource
             ])
             ->filtersFormColumns(2)
             ->actions([
+                Tables\Actions\Action::make('share')
+                    ->label('Share')
+                    ->icon('heroicon-o-share')
+                    ->color('gray')
+                    // Nothing to offer until at least one account is connected.
+                    ->visible(fn (): bool => SocialAccount::where('is_active', true)->exists())
+                    ->form(fn (Article $record): array => [
+                        Forms\Components\CheckboxList::make('platforms')
+                            ->label('Post to')
+                            ->options(static::sharablePlatforms($record))
+                            ->descriptions(static::shareStatuses($record))
+                            ->default(array_keys(static::sharablePlatforms($record, onlyUnsent: true)))
+                            ->required(),
+                    ])
+                    ->modalHeading(fn (Article $record): string => 'Share: ' . $record->title)
+                    ->modalSubmitActionLabel('Post now')
+                    ->action(function (Article $record, array $data): void {
+                        $sharer = new SocialSharer();
+                        $sent   = [];
+                        $held   = [];
+
+                        foreach ($data['platforms'] as $platform) {
+                            $share = $sharer->share($record, $platform);
+
+                            if ($share->wasSent()) {
+                                $sent[] = $platform;
+                            } else {
+                                $held[] = $platform . ' (' . $share->error . ')';
+                            }
+                        }
+
+                        if ($sent !== []) {
+                            Notification::make()
+                                ->title('Posted to ' . implode(', ', $sent))
+                                ->success()
+                                ->send();
+                        }
+
+                        if ($held !== []) {
+                            Notification::make()
+                                ->title('Not posted')
+                                ->body(implode("\n", $held))
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
+                    }),
                 Tables\Actions\Action::make('aiRewrite')
                     ->label('AI rewrite')
                     ->icon('heroicon-o-sparkles')
