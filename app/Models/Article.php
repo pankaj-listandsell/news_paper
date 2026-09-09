@@ -31,6 +31,15 @@ class Article extends Model
         'source_id', 'source_name', 'source_url',
     ];
 
+    /**
+     * Mirrors the column defaults, so a freshly made Article reads the same in
+     * memory as it will once saved. Without this, http_status is null on a new
+     * instance and anything checking "is this a normal page?" gets it wrong.
+     */
+    protected $attributes = [
+        'http_status' => 200,
+    ];
+
     protected $casts = [
         'is_featured'  => 'boolean',
         'is_breaking'  => 'boolean',
@@ -105,6 +114,14 @@ class Article extends Model
     public function source(): BelongsTo
     {
         return $this->belongsTo(NewsSource::class, 'source_id');
+    }
+
+    /**
+     * Where this article has been posted, one row per platform.
+     */
+    public function socialShares(): HasMany
+    {
+        return $this->hasMany(SocialShare::class);
     }
 
     /**
