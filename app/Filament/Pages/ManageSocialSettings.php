@@ -5,7 +5,9 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use App\Models\SocialAccount;
 use App\Social\PublisherFactory;
+use App\Social\SocialRunner;
 use App\Support\SocialSettings;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -63,6 +65,83 @@ class ManageSocialSettings extends Page implements HasForms
             'access_token_secret' => 'Access token secret',
         ],
     ];
+
+    /**
+     * @return array<int, Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        $runner  = new SocialRunner();
+        $waiting = array_sum($runner->pendingCounts());
+
+        return [
+            Action::make('preview')
+                ->label('See what is waiting')
+                ->icon('heroicon-o-eye')
+                ->color('gray')
+                ->action(function () use ($runner): void {
+                    $report = $runner->run(dryRun: true);
+
+                    if ($report->plannedCount() === 0) {
+                        Notification::make()
+                            ->title('Nothing is waiting')
+                            ->body('Every published article has already been posted to the platforms that are switched on for the scheduled run.')
+                            ->info()
+                            ->send();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->title($report->plannedCount() . ' article(s) would be posted')
+                        ->body(collect($report->planned)
+                            ->map(fn (array $row) => "{$row['platform']}: {$row['title']}")
+                            ->implode("\n"))
+                        ->info()
+                        ->persistent()
+                        ->send();
+                }),
+
+            Action::make('runNow')
+                ->label($waiting > 0 ? "Post now ({$waiting} waiting)" : 'Post now')
+                ->icon('heroicon-o-paper-airplane')
+                ->requiresConfirmation()
+                ->modalHeading('Post the waiting articles now')
+                ->modalDescription(fn (): string => SocialSettings::practiceMode()
+                    ? 'Practice mode is on, so nothing will actually leave the server.'
+                    : 'This posts for real, to every platform switched on for the scheduled run. It cannot be undone.')
+                ->modalSubmitActionLabel('Post now')
+                ->color(fn (): string => SocialSettings::practiceMode() ? 'gray' : 'danger')
+                ->action(function () use ($runner): void {
+                    $report = $runner->run();
+
+                    if ($report->didNothing()) {
+                        Notification::make()
+                            ->title('Nothing was waiting')
+                            ->info()
+                            ->send();
+
+                        return;
+                    }
+
+                    if ($report->sentCount() > 0) {
+                        Notification::make()
+                            ->title($report->sentCount() . ' article(s) posted')
+                            ->success()
+                            ->send();
+                    }
+
+                    if ($report->heldCount() > 0) {
+                        Notification::make()
+                            ->title($report->heldCount() . ' could not be posted')
+                            ->body($report->problems())
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                    }
+                }),
+        ];
+    }
 
     public function mount(): void
     {
