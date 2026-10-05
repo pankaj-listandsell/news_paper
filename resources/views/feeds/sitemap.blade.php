@@ -14,6 +14,15 @@
         </url>
     @endforeach
 
+    {{-- Reader tools --}}
+    @foreach (['tools.age', 'tools.plz', 'tools.gold'] as $tool)
+        <url>
+            <loc>{{ route($tool) }}</loc>
+            <changefreq>weekly</changefreq>
+            <priority>0.6</priority>
+        </url>
+    @endforeach
+
     @foreach ($categories as $category)
         <url>
             <loc>{{ route('category.show', $category) }}</loc>

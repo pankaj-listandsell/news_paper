@@ -177,7 +177,7 @@
     {{-- Footer --}}
     <footer class="mt-16 border-t-4 border-[var(--brand)] bg-gray-900 text-gray-300">
         <div class="mx-auto max-w-7xl px-4 py-12">
-            <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
 
                 {{-- Brand --}}
                 <div class="lg:col-span-2">
@@ -268,6 +268,16 @@
                             <li><a href="{{ route('page', 'datenschutz') }}" class="text-gray-400 transition hover:text-white">Datenschutz</a></li>
                         @endif
                         <li><a href="{{ route('rss') }}" class="text-gray-400 transition hover:text-white">RSS-Feed</a></li>
+                    </ul>
+                </div>
+
+                {{-- Tools --}}
+                <div>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-white">Service-Tools</h4>
+                    <ul class="mt-5 space-y-2.5 text-sm">
+                        <li><a href="{{ route('tools.plz') }}" class="text-gray-400 transition hover:text-white">PLZ-Suche</a></li>
+                        <li><a href="{{ route('tools.gold') }}" class="text-gray-400 transition hover:text-white">Goldpreis</a></li>
+                        <li><a href="{{ route('tools.age') }}" class="text-gray-400 transition hover:text-white">Altersrechner</a></li>
                     </ul>
                 </div>
             </div>

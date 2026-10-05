@@ -4,6 +4,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\ToolController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [NewsController::class, 'home'])->name('home');
@@ -19,6 +20,13 @@ Route::get('/kontakt', [ContactController::class, 'show'])->name('contact');
 Route::post('/kontakt', [ContactController::class, 'send'])
     ->middleware('throttle:5,60')
     ->name('contact.send');
+
+/*
+ * Reader tools. Declared before the /{page} catch-all, like the contact form.
+ */
+Route::get('/altersrechner', [ToolController::class, 'age'])->name('tools.age');
+Route::get('/plz-suche', [ToolController::class, 'postalCodes'])->name('tools.plz');
+Route::get('/goldpreis', [ToolController::class, 'goldPrice'])->name('tools.gold');
 
 // Static pages (content managed in admin → General Settings)
 Route::get('/{page}', [NewsController::class, 'page'])
