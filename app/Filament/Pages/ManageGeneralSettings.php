@@ -383,6 +383,7 @@ class ManageGeneralSettings extends Page implements HasForms
                     ->description('Leave empty to hide a link.')
                     ->schema([
                         Forms\Components\TextInput::make('social_facebook')->label('Facebook')->url()->maxLength(255),
+                        Forms\Components\TextInput::make('social_linkedin')->label('LinkedIn')->url()->maxLength(255),
                         Forms\Components\TextInput::make('social_twitter')->label('X (Twitter)')->url()->maxLength(255),
                         Forms\Components\TextInput::make('social_instagram')->label('Instagram')->url()->maxLength(255),
                         Forms\Components\TextInput::make('social_youtube')->label('YouTube')->url()->maxLength(255),

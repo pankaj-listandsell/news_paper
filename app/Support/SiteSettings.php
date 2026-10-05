@@ -27,6 +27,7 @@ class SiteSettings
         'copyright_text'   => 'Alle Rechte vorbehalten.',
         'contact_email'    => '',
         'social_facebook'  => '',
+        'social_linkedin'  => '',
         'social_twitter'   => '',
         'social_instagram' => '',
         'social_youtube'   => '',
@@ -369,6 +370,7 @@ class SiteSettings
     {
         $links = [
             'Facebook'  => self::get('social_facebook'),
+            'LinkedIn'  => self::get('social_linkedin'),
             'X'         => self::get('social_twitter'),
             'Instagram' => self::get('social_instagram'),
             'YouTube'   => self::get('social_youtube'),

@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('siteFavicon', SiteSettings::faviconUrl());
             $view->with('siteSocial', SiteSettings::socialLinks());
             $view->with('brand', SiteSettings::brandColors());
+            $view->with('weather', \App\Support\WeatherBar::current());
 
             $view->with('navCategories', Category::where('is_active', true)
                 ->orderBy('sort_order')

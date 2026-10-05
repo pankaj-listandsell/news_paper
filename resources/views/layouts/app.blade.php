@@ -108,6 +108,8 @@
     @endif
 
     {{-- Masthead --}}
+    @include('partials.header-bar')
+
     <header class="border-b bg-white">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:py-6">
             <a href="{{ route('home') }}" class="flex items-center gap-2">
