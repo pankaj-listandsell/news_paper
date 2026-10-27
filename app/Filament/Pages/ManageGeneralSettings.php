@@ -223,6 +223,18 @@ class ManageGeneralSettings extends Page implements HasForms
                 Forms\Components\Section::make('Scraping schedule')
                     ->description('When the news scraper runs (German time). Needs the schedule:run cron active on the server.')
                     ->schema([
+                        Forms\Components\TextInput::make('scrape_daily_limit')
+                            ->label('Beiträge pro Tag')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(200)
+                            ->required()
+                            ->helperText(fn (): string => sprintf(
+                                'Höchstzahl automatisch veröffentlichter Beiträge pro Tag, gleichmäßig verteilt zwischen %d und %d Uhr. Alles darüber wird übersprungen und kostet auch keine KI-Credits. Heute bereits veröffentlicht: %d.',
+                                \App\Support\PublishingBudget::WINDOW_START,
+                                \App\Support\PublishingBudget::WINDOW_END,
+                                \App\Support\PublishingBudget::publishedToday(),
+                            )),
                         Forms\Components\Select::make('scrape_frequency')
                             ->label('Run')
                             ->options(SiteSettings::scrapeFrequencyOptions())

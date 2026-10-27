@@ -6,6 +6,7 @@ use App\Jobs\ScrapeSourceJob;
 use App\Mail\ScrapeReport;
 use App\Mail\ScrapeStarted;
 use App\Models\NewsSource;
+use App\Support\PublishingBudget;
 use App\Support\SiteSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +21,8 @@ class ScrapeNews extends Command
      */
     protected $signature = 'news:scrape
                             {--source= : Only scrape this source id}
-                            {--sync : Run inline instead of queueing}';
+                            {--sync : Run inline instead of queueing}
+                            {--no-limit : Ignore the daily posting cap}';
 
     /**
      * The console command description.
@@ -44,6 +46,23 @@ class ScrapeNews extends Command
             return self::SUCCESS;
         }
 
+        $budget = $this->option('no-limit') ? null : new PublishingBudget();
+
+        // Outside posting hours there is nothing to do. Fetching now would
+        // only move the cutoff forward and quietly drop the night's news
+        // before the morning run could pick any of it up.
+        if ($budget && $budget->allowance() === 0) {
+            $this->line(PublishingBudget::isWithinWindow()
+                ? "Today's limit is used up ({$budget->publishedBefore()}/{$budget->limit()})."
+                : 'Outside posting hours (' . PublishingBudget::WINDOW_START . ':00–' . PublishingBudget::WINDOW_END . ':59).');
+
+            return self::SUCCESS;
+        }
+
+        if ($budget) {
+            $this->line("Budget: {$budget->allowance()} this run, {$budget->publishedBefore()}/{$budget->limit()} published today.");
+        }
+
         // Notify only for sync runs (queued jobs finish later, off the console)
         // and only when the admin turned summary emails on.
         $notify = $this->option('sync') && SiteSettings::scrapeNotify();
@@ -57,7 +76,7 @@ class ScrapeNews extends Command
         foreach ($sources as $source) {
             if ($this->option('sync')) {
                 try {
-                    $result = (new ScrapeSourceJob($source))->handle();
+                    $result = (new ScrapeSourceJob($source, $budget))->handle();
                     $this->info("✓ {$source->name}: +{$result['created']} new, {$result['updated']} updated");
                     $report[] = ['source' => $source->name, 'created' => $result['created'], 'updated' => $result['updated'], 'error' => null];
                 } catch (\Throwable $e) {
@@ -65,9 +84,13 @@ class ScrapeNews extends Command
                     $report[] = ['source' => $source->name, 'created' => 0, 'updated' => 0, 'error' => $e->getMessage()];
                 }
             } else {
-                ScrapeSourceJob::dispatch($source);
+                ScrapeSourceJob::dispatch($source, $budget);
                 $this->line("→ queued: {$source->name}");
             }
+        }
+
+        if ($budget) {
+            $this->info("Posted {$budget->taken()} this run — {$budget->remainingToday()} left today.");
         }
 
         // Email the summary once the run is done.

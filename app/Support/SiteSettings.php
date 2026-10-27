@@ -48,6 +48,7 @@ class SiteSettings
         'imprint_content' => '',
         'privacy_content' => '',
         // Scraping schedule
+        'scrape_daily_limit' => '20',
         'scrape_frequency' => 'times',
         'scrape_times'     => '06:00,14:00,23:00',
         // Email a run summary after each scrape ('1' = on, '0' = off)
@@ -67,6 +68,17 @@ class SiteSettings
         return $value !== null && $value !== ''
             ? (string) $value
             : (self::DEFAULTS[$key] ?? '');
+    }
+
+    /**
+     * How many scraped posts may go out in a day. Also the day's AI budget:
+     * each post costs a rewrite and an image.
+     */
+    public static function dailyPostLimit(): int
+    {
+        $saved = (int) self::get('scrape_daily_limit');
+
+        return $saved > 0 ? $saved : 20;
     }
 
     public static function scrapeFrequency(): string

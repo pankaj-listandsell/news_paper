@@ -9,6 +9,7 @@ use App\Scraping\ArticleContentExtractor;
 use App\Scraping\RssScraper;
 use App\Scraping\SourceScraper;
 use App\Support\AiConfig;
+use App\Support\PublishingBudget;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -20,8 +21,15 @@ class ScrapeSourceJob implements ShouldQueue
     public int $timeout = 180;
     public int $tries = 2;
 
-    public function __construct(public NewsSource $source)
-    {
+    /**
+     * @param  PublishingBudget|null  $budget  shared across every source in a
+     *         run, so the daily cap belongs to the site rather than to a feed.
+     *         Null means "no cap" — a one-off run started by hand.
+     */
+    public function __construct(
+        public NewsSource $source,
+        public ?PublishingBudget $budget = null,
+    ) {
     }
 
     /**
@@ -81,6 +89,16 @@ class ScrapeSourceJob implements ShouldQueue
                     continue;
                 }
 
+                // Checked before the costly bits below, not after: an article
+                // over the day's limit is never going to be published, so it
+                // must not be enriched either. Dropped rather than held as a
+                // draft — the scraper's cutoff moves on regardless, so this
+                // one will not come back tomorrow.
+                if ($isNew && $this->overDailyLimit($this->source)) {
+                    $skipped++;
+                    continue;
+                }
+
                 // Enrich just this one article, then persist it immediately.
                 if ($extractor) {
                     $data = $this->applyFullContent($extractor, $data);
@@ -108,6 +126,12 @@ class ScrapeSourceJob implements ShouldQueue
                     $data
                 );
 
+                // Only a published article spends the day's budget; one held
+                // as a draft by a failed rewrite is not a post.
+                if ($article->wasRecentlyCreated && $article->status === 'published') {
+                    $this->budget?->take();
+                }
+
                 $article->wasRecentlyCreated ? $created++ : $updated++;
             }
 
@@ -129,6 +153,21 @@ class ScrapeSourceJob implements ShouldQueue
         }
 
         return ['created' => $created, 'updated' => $updated];
+    }
+
+    /**
+     * Has the site posted as much as it may today?
+     *
+     * Only applies to sources that publish on their own. A feed set to land
+     * in drafts is not posting, so the cap has nothing to hold back.
+     */
+    private function overDailyLimit(NewsSource $source): bool
+    {
+        if ($this->budget === null || ! $source->auto_publish) {
+            return false;
+        }
+
+        return ! $this->budget->hasRoom();
     }
 
     protected function resolveScraper(NewsSource $source): SourceScraper
