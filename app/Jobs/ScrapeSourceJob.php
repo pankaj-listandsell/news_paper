@@ -9,6 +9,7 @@ use App\Scraping\ArticleContentExtractor;
 use App\Scraping\RssScraper;
 use App\Scraping\SourceScraper;
 use App\Support\AiConfig;
+use App\Support\ImagePlan;
 use App\Support\PublishingBudget;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -29,6 +30,7 @@ class ScrapeSourceJob implements ShouldQueue
     public function __construct(
         public NewsSource $source,
         public ?PublishingBudget $budget = null,
+        public ?ImagePlan $images = null,
     ) {
     }
 
@@ -106,9 +108,7 @@ class ScrapeSourceJob implements ShouldQueue
                 if ($rewriter) {
                     $data = $this->applyAiRewrite($rewriter, $data, $language, $categories);
                 }
-                if ($imageGenerator) {
-                    $data = $this->applyAiImage($imageGenerator, $data);
-                }
+                $data = $this->applyImage($imageGenerator, $data);
 
                 // The author follows the category — and the category is only
                 // settled once AI categorisation has had its say, so it is
@@ -352,6 +352,62 @@ class ScrapeSourceJob implements ShouldQueue
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
+    /**
+     * Settle this article's picture: the publisher's own photograph, or one
+     * drawn for it.
+     *
+     * The two alternate through the day, so the front page carries a mix. An
+     * article the feed gave no picture for takes a drawn one out of turn,
+     * since the alternative is no image at all — and when the day's drawing
+     * budget is spent, the photograph stands.
+     *
+     * Whichever wins, the bytes end up on our own disk. A photograph left as
+     * a link to the publisher's server is theirs to move or delete, and a
+     * months-old article would quietly lose its image.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function applyImage(?\App\Scraping\AiImageGenerator $generator, array $data): array
+    {
+        $ownPicture = $data['featured_image'] ?? null;
+        $wantsAi    = $generator !== null
+            && ($this->images?->wantsAi($this->nextPostNumber(), filled($ownPicture)) ?? true);
+
+        if ($wantsAi) {
+            $drawn = $this->applyAiImage($generator, $data);
+
+            // Only a drawn image that actually arrived spends a slot; a failed
+            // one falls through to the photograph below.
+            if (($drawn['featured_image'] ?? null) !== $ownPicture) {
+                $this->images?->drew();
+
+                return $drawn;
+            }
+        }
+
+        if (filled($ownPicture)) {
+            $data['featured_image'] = (new \App\Scraping\SourceImageFetcher())->fetch($ownPicture)
+                // Keeping the link is worse than owning the file, but better
+                // than an article with no picture at all.
+                ?? $ownPicture;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Which post of the day this one will be, counting from one.
+     */
+    private function nextPostNumber(): int
+    {
+        if ($this->budget === null) {
+            return PublishingBudget::publishedToday() + 1;
+        }
+
+        return $this->budget->publishedBefore() + $this->budget->taken() + 1;
+    }
+
     private function applyAiImage(\App\Scraping\AiImageGenerator $generator, array $data): array
     {
         $path = $generator->generate($data['title'], $this->source->category?->name);

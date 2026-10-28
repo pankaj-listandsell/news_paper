@@ -235,6 +235,16 @@ class ManageGeneralSettings extends Page implements HasForms
                                 \App\Support\PublishingBudget::WINDOW_END,
                                 \App\Support\PublishingBudget::publishedToday(),
                             )),
+                        Forms\Components\TextInput::make('scrape_ai_image_limit')
+                            ->label('KI-Bilder pro Tag')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(200)
+                            ->required()
+                            ->helperText(fn (): string => sprintf(
+                                'Wie viele Beiträge ein gezeichnetes Bild bekommen; die übrigen behalten das Foto der Quelle. Beide wechseln sich ab. Auf 0 setzen, um nur Quellfotos zu verwenden. Heute gezeichnet: %d.',
+                                \App\Support\ImagePlan::drawnToday(),
+                            )),
                         Forms\Components\Select::make('scrape_frequency')
                             ->label('Run')
                             ->options(SiteSettings::scrapeFrequencyOptions())

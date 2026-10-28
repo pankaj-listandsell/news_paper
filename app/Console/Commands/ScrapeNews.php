@@ -6,6 +6,7 @@ use App\Jobs\ScrapeSourceJob;
 use App\Mail\ScrapeReport;
 use App\Mail\ScrapeStarted;
 use App\Models\NewsSource;
+use App\Support\ImagePlan;
 use App\Support\PublishingBudget;
 use App\Support\SiteSettings;
 use Illuminate\Console\Command;
@@ -48,6 +49,10 @@ class ScrapeNews extends Command
 
         $budget = $this->option('no-limit') ? null : new PublishingBudget();
 
+        // One plan for the whole run, so photographs and drawn images alternate
+        // across the site rather than within each feed.
+        $images = new ImagePlan();
+
         // Outside posting hours there is nothing to do. Fetching now would
         // only move the cutoff forward and quietly drop the night's news
         // before the morning run could pick any of it up.
@@ -76,7 +81,7 @@ class ScrapeNews extends Command
         foreach ($sources as $source) {
             if ($this->option('sync')) {
                 try {
-                    $result = (new ScrapeSourceJob($source, $budget))->handle();
+                    $result = (new ScrapeSourceJob($source, $budget, $images))->handle();
                     $this->info("✓ {$source->name}: +{$result['created']} new, {$result['updated']} updated");
                     $report[] = ['source' => $source->name, 'created' => $result['created'], 'updated' => $result['updated'], 'error' => null];
                 } catch (\Throwable $e) {
@@ -84,13 +89,17 @@ class ScrapeNews extends Command
                     $report[] = ['source' => $source->name, 'created' => 0, 'updated' => 0, 'error' => $e->getMessage()];
                 }
             } else {
-                ScrapeSourceJob::dispatch($source, $budget);
+                ScrapeSourceJob::dispatch($source, $budget, $images);
                 $this->line("→ queued: {$source->name}");
             }
         }
 
         if ($budget) {
             $this->info("Posted {$budget->taken()} this run — {$budget->remainingToday()} left today.");
+        }
+
+        if ($images->drawnThisRun() > 0 || $images->limit() > 0) {
+            $this->line("Drawn images: {$images->drawnThisRun()} this run, {$images->remaining()} left today.");
         }
 
         // Email the summary once the run is done.

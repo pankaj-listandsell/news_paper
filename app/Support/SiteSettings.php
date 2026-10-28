@@ -49,6 +49,7 @@ class SiteSettings
         'privacy_content' => '',
         // Scraping schedule
         'scrape_daily_limit' => '20',
+        'scrape_ai_image_limit' => '10',
         'scrape_frequency' => 'times',
         'scrape_times'     => '06:00,14:00,23:00',
         // Email a run summary after each scrape ('1' = on, '0' = off)
@@ -79,6 +80,17 @@ class SiteSettings
         $saved = (int) self::get('scrape_daily_limit');
 
         return $saved > 0 ? $saved : 20;
+    }
+
+    /**
+     * How many of the day's posts get a drawn image rather than the
+     * publisher's own photograph. Each one is a paid API call.
+     */
+    public static function dailyAiImageLimit(): int
+    {
+        $saved = (int) self::get('scrape_ai_image_limit');
+
+        return $saved >= 0 ? $saved : 10;
     }
 
     public static function scrapeFrequency(): string
